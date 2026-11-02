@@ -1,0 +1,205 @@
+<!-- pages/ledger/ledger.wxml - 台账热力图（设计稿 Screen5） -->
+<view class="page">
+  <view class="status-bar" style="height: {{statusBarHeight}}px;"></view>
+
+  <!-- 统一导航栏（与胶囊对齐） -->
+  <view class="nav-bar" style="height: {{navBarHeight}}px;">
+    <text class="nav-bar__title">购彩台账</text>
+  </view>
+
+  <view class="page-content ledger">
+    <view wx:if="{{errorText}}" class="card state-card">
+      <text class="state-card__title">台账暂时没同步成功</text>
+      <text class="state-card__desc">{{errorText}}</text>
+      <button class="btn-primary state-card__action" bindtap="onRetry">重新加载</button>
+    </view>
+
+    <!-- 购彩日历（热力图） -->
+    <view wx:if="{{!errorText}}" class="card heatmap-card">
+      <view class="heatmap-card__header">
+        <text class="heatmap-card__title">购彩日历</text>
+        <view class="heatmap-legend">
+          <text class="heatmap-legend__text">{{heatmap.legend.min}}</text>
+          <view class="heatmap-legend__swatch heatmap-legend__swatch--l0"></view>
+          <view class="heatmap-legend__swatch heatmap-legend__swatch--l1"></view>
+          <view class="heatmap-legend__swatch heatmap-legend__swatch--l2"></view>
+          <view class="heatmap-legend__swatch heatmap-legend__swatch--l3"></view>
+          <view class="heatmap-legend__swatch heatmap-legend__swatch--l4"></view>
+          <text class="heatmap-legend__text">{{heatmap.legend.max}}</text>
+        </view>
+      </view>
+
+        <!-- 热力图主体：行标签 + 网格（月份标签作为网格覆盖层，共享坐标原点，2026-08-21 修复对不齐） -->
+        <view class="heatmap-body">
+          <view class="heatmap-days">
+            <text
+              class="heatmap-day heatmap-day--{{item.type}}"
+              wx:for="{{heatmap.rowLabels}}"
+              wx:key="day"
+            >{{item.day}}</text>
+          </view>
+          <view class="heatmap-grid-wrap" style="width: {{heatmap.gridWidth}}rpx;">
+            <view class="heatmap-grid" style="width: {{heatmap.gridWidth}}rpx;">
+              <view
+                class="heatmap-cell heatmap-cell--l{{item.level}} {{activeCellId === item.id ? 'heatmap-cell--active' : ''}}"
+                wx:for="{{heatmap.cells}}"
+                wx:key="id"
+                data-id="{{item.id}}"
+                data-date="{{item.date}}"
+                data-level="{{item.level}}"
+                data-future="{{item.isFuture}}"
+                data-type="{{item.type}}"
+                bindtap="onHeatmapCellTap"
+              ></view>
+            </view>
+            <!-- 月份标签：绝对定位于网格容器底部（bottom:0, left:0），left=col×46 与格子列对齐 -->
+            <view class="heatmap-months" style="width: {{heatmap.gridWidth}}rpx;">
+              <text
+                class="heatmap-month"
+                style="left: {{item.left}}rpx;"
+                wx:for="{{heatmap.monthLabels}}"
+                wx:key="text"
+              >{{item.text}}</text>
+            </view>
+          </view>
+        </view>
+
+      <view class="heatmap-info">
+        <text class="heatmap-info__title">{{heatmapInfo.title}}</text>
+        <text wx:if="{{heatmapInfo.meta}}" class="heatmap-info__meta">{{heatmapInfo.meta}}</text>
+        <text class="heatmap-info__desc">{{heatmapInfo.desc}}</text>
+        <view wx:if="{{heatmapInfo.winningRed.length || heatmapInfo.winningBlue.length}}" class="heatmap-info__numbers">
+          <view class="heatmap-info__balls">
+            <view class="heatmap-info__ball heatmap-info__ball--red" wx:for="{{heatmapInfo.winningRed}}" wx:key="*this">{{item}}</view>
+            <text class="ledger-drawer__dash">-</text>
+            <view class="heatmap-info__ball heatmap-info__ball--blue" wx:for="{{heatmapInfo.winningBlue}}" wx:key="*this">{{item}}</view>
+          </view>
+        </view>
+        <!-- 补差同步：仅"号码待同步"（已过开奖日且无数据）时显示 -->
+        <button
+          wx:if="{{heatmapInfo.canSync}}"
+          class="heatmap-info__sync"
+          bindtap="onSyncDraw"
+          loading="{{syncingDraw}}"
+          disabled="{{syncingDraw}}"
+        >同步开奖信息</button>
+      </view>
+    </view>
+
+    <!-- 购彩明细（2026-10-16：标题右侧显示当前筛选，就地清除） -->
+    <view wx:if="{{!errorText}}" class="ledger__section">
+      <text class="section-title">购彩明细</text>
+      <view
+        wx:if="{{selectedDrawFilter}}"
+        class="ledger__filter"
+        bindtap="onClearFilter"
+        hover-class="press-surface"
+        hover-stay-time="80"
+      >
+        <text class="ledger__filter-text">{{filterChipText}}</text>
+        <view class="ledger__filter-close">
+          <icon type="close" size="{{10}}" tone="secondary" />
+        </view>
+      </view>
+    </view>
+
+    <view wx:if="{{!errorText && !visibleTickets.length && !loading}}" class="card state-card">
+      <text class="state-card__title">{{selectedDrawFilter ? '该开奖期暂无购彩记录' : '还没有购彩记录'}}</text>
+      <text class="state-card__desc">{{selectedDrawFilter ? '点击「购彩明细」右侧的筛选标签即可恢复完整列表。' : '录入新的票据后，这里会自动沉淀你的购彩日历和历史明细。'}}</text>
+    </view>
+
+    <view class="ticket" wx:for="{{visibleTickets}}" wx:key="period" data-index="{{index}}" bindtap="onTicketTap" hover-class="press-surface" hover-stay-time="80">
+      <!-- 顶部：期号 + 彩种 + 状态 -->
+      <view class="ticket__top">
+        <text class="ticket__period">{{item.period}} · {{item.lotteryName}}</text>
+        <view class="badge ticket__badge ticket__badge--{{item.statusClass}}">
+          <text>{{item.status}}</text>
+        </view>
+      </view>
+
+      <!-- 投注号码：红蓝 - 分隔 + 倍数 -->
+      <view class="ticket__bets">
+        <view class="ticket__bet" wx:for="{{item.bets}}" wx:for-item="bet" wx:key="id">
+          <view class="ticket__nums">
+            <view class="ticket__ball-list">
+              <text class="ticket__ball ticket__ball--red {{num.matched ? 'ticket__ball--red-active' : ''}}" wx:for="{{bet.redBalls}}" wx:for-item="num" wx:key="value">{{num.value}}</text>
+            </view>
+            <text class="ticket__dash">-</text>
+            <view class="ticket__ball-list">
+              <text class="ticket__ball ticket__ball--blue {{num.matched ? 'ticket__ball--blue-active' : ''}}" wx:for="{{bet.blueBalls}}" wx:for-item="num" wx:key="value">{{num.value}}</text>
+            </view>
+          </view>
+          <text class="ticket__mult">{{bet.mult}}</text>
+        </view>
+      </view>
+
+      <!-- 底部：投注金额 + 金色中奖金额 -->
+      <view class="ticket__bottom">
+        <text class="ticket__bet-amount">投注金额 {{item.betAmount}}</text>
+        <text wx:if="{{item.winAmount}}" class="ticket__win-amount">{{item.winAmount}}</text>
+      </view>
+    </view>
+
+    <!-- 分页状态（2026-10-16：筛选态下不再复用这一行做「查看全部」，
+         清除筛选改由「购彩明细」标题旁的标签就地完成，避免长列表需要滚到底部） -->
+    <view wx:if="{{!errorText && !loading && !selectedDrawFilter && visibleTickets.length}}" class="load-more" bindtap="onLoadMore" hover-class="press-surface" hover-stay-time="80">
+      <text class="load-more__text">{{hasMore ? '点击加载更多' : '已加载全部记录'}}</text>
+    </view>
+
+    <view class="page-bottom-safe"></view>
+  </view>
+
+  <view wx:if="{{drawerVisible && drawerTicket}}" class="ledger-drawer__mask" catchtap="closeDrawer">
+    <view class="ledger-drawer" catchtap="noop">
+      <view class="ledger-drawer__handle"></view>
+
+      <view class="ledger-drawer__header">
+        <text class="ledger-drawer__title">{{drawerTicket.period}} · {{drawerTicket.lotteryName}}</text>
+        <text class="ledger-drawer__meta">{{drawerTicket.status}}</text>
+        <text class="ledger-drawer__desc">{{drawerTicket.summaryText}}</text>
+      </view>
+
+      <scroll-view class="ledger-drawer__body" scroll-y enhanced show-scrollbar="{{false}}">
+        <view class="ledger-drawer__panel">
+          <view class="ledger-drawer__panel-head">
+            <text class="ledger-drawer__panel-title">开奖信息</text>
+            <text class="ledger-drawer__panel-sub">{{drawerTicket.drawDate ? ('开奖日期 ' + drawerTicket.drawDate) : ''}}</text>
+          </view>
+
+          <view wx:if="{{drawerTicket.winningRed.length || drawerTicket.winningBlue.length}}" class="ledger-drawer__ball-row">
+            <view class="ledger-drawer__ball ledger-drawer__ball--red" wx:for="{{drawerTicket.winningRed}}" wx:key="value">{{item.value}}</view>
+            <text class="ledger-drawer__dash">-</text>
+            <view class="ledger-drawer__ball ledger-drawer__ball--blue" wx:for="{{drawerTicket.winningBlue}}" wx:key="value">{{item.value}}</view>
+          </view>
+          <text wx:else class="ledger-drawer__empty">本期尚未开奖，开奖后会在这里展示中奖号码。</text>
+        </view>
+
+        <view class="ledger-drawer__panel">
+          <view class="ledger-drawer__panel-head">
+            <text class="ledger-drawer__panel-title">我的号码</text>
+            <text class="ledger-drawer__panel-sub">命中号码已单独高亮</text>
+          </view>
+
+          <view class="ledger-drawer__bet" wx:for="{{drawerTicket.bets}}" wx:for-item="bet" wx:key="id">
+            <view class="ledger-drawer__bet-balls">
+              <view class="ledger-drawer__ball ledger-drawer__ball--muted {{num.matched ? 'ledger-drawer__ball--red' : ''}}" wx:for="{{bet.redBalls}}" wx:for-item="num" wx:key="value">{{num.value}}</view>
+              <text class="ledger-drawer__dash">-</text>
+              <view class="ledger-drawer__ball ledger-drawer__ball--muted {{num.matched ? 'ledger-drawer__ball--blue' : ''}}" wx:for="{{bet.blueBalls}}" wx:for-item="num" wx:key="value">{{num.value}}</view>
+            </view>
+            <text class="ledger-drawer__bet-mult">{{bet.mult}}</text>
+          </view>
+        </view>
+      </scroll-view>
+
+      <view class="ledger-drawer__actions">
+        <button class="btn-ghost ledger-drawer__action" bindtap="closeDrawer">关闭</button>
+        <button
+          class="btn-primary ledger-drawer__action {{drawerTicket.actionText === '标记已兑奖' ? '' : 'ledger-drawer__action--danger'}}"
+          bindtap="onDrawerAction"
+          loading="{{drawerSubmitting}}"
+          disabled="{{drawerSubmitting}}"
+        >{{drawerTicket.actionText}}</button>
+      </view>
+    </view>
+  </view>
+</view>

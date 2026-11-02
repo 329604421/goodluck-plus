@@ -1,0 +1,463 @@
+/* pages/nearby/nearby.wxss - 「附近」地图页
+   设计稿：375px 宽 → 750rpx 基准（1px = 2rpx）
+
+   字号/配色对齐 app.wxss 与既有页面（home / ledger），全部取自已确立的量表：
+     11px=22rpx(微文字/徽章) · 12px=24rpx(二级) · 13px=26rpx(表单标签)
+     14px=28rpx(正文) · 15px=30rpx(区块标题) · 16px=32rpx(按钮/卡片标题) · 20px=40rpx(页标题)
+     按钮一律 .btn-primary / .btn-ghost（h104rpx），不在页面里自造按钮样式。
+
+   2026-10-16 深色模式：
+   - 页面自绘部分（导航、气泡、浮钮、抽屉、列表）全部改为语义令牌。
+   - **原生地图底图不在本次范围内**：map 组件的瓦片颜色由腾讯地图/微信决定，
+     WXSS 与 darkmode 都改不动它（方案 §8.1）。因此本页在深色下是「界面层深色 +
+     底图仍为默认浅色」，属于部分适配，详见《深色模式实施说明》§5。
+   - 沿用本页 backdrop=false 的例外：地图页不挂底部毛玻璃浮层。 */
+
+.nearby {
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ==================== 地图区 ==================== */
+
+.nearby__map-wrap {
+  position: relative;
+  width: 100%;
+  flex-shrink: 0;
+  overflow: hidden;
+  /* 瓦片加载前的底色（深色下同时充当底图未暗化时的过渡底色） */
+  background: var(--surface-sunken);
+}
+
+.nearby__map {
+  width: 100%;
+  height: 100%;
+}
+
+/* ==================== 左上：搜索结果气泡 / 状态提示 ====================
+   设计稿 屏 01 气泡「已找到 20 个网点 · 约 1.5km 内」
+        屏 04 提示条「地图已移动，请点左下角「搜索此区域」」 */
+.nearby-hint {
+  position: absolute;
+  left: 40rpx;
+  top: 32rpx;
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  height: 72rpx;
+  border-radius: 999rpx;
+  background: var(--surface-raised);
+  /* V2 里浮层的层级由 --elev-2 投影承担；细边只用来让"胶囊边缘"更利落。
+     ⚠️ 这条 border 不能删 —— check_miniprogram.py 有一条用户确认过的契约：
+     「搜索结果气泡必须带外壳（background + border + border-radius + box-shadow）」，
+     V1.6 曾试过去壳改用光晕，V1.7 已回退。 */
+  border: 2rpx solid var(--line-subtle);
+  box-shadow: var(--elev-2);
+  box-sizing: border-box;
+}
+
+.nearby-hint--bubble {
+  max-width: 600rpx;
+  padding: 0 20rpx 0 28rpx;
+}
+
+/* 提示条左右各 20px 边距撑满（设计稿宽 335px） */
+.nearby-hint--wide {
+  right: 40rpx;
+  padding: 0 24rpx;
+}
+
+.nearby-hint__text {
+  font-size: 24rpx;
+  line-height: 32rpx;
+  font-weight: 500;
+  color: var(--text-primary);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* 气泡右侧「查看」提示：让「点它可以打开网点列表」这件事可见（方案 §6.3） */
+.nearby-hint__more {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  font-size: 22rpx;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+/* ==================== 地图底部一行：左「搜索此区域」+ 右「回到我的位置」 ==================== */
+.nearby-actions {
+  position: absolute;
+  left: 40rpx;
+  right: 40rpx;
+  bottom: 220rpx;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+/* 搜索此区域（平移 / 缩放后出现）。margin-right:auto 把它顶到最左、同行的定位按钮顶到最右。 */
+.nearby-search {
+  position: relative;
+  margin-right: auto;
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  height: 80rpx;
+  padding: 0 32rpx;
+  border-radius: 999rpx;
+  background: var(--action-bg);
+  box-shadow: var(--elev-2);
+  box-sizing: border-box;
+}
+
+.nearby-search__text {
+  font-size: 26rpx;
+  line-height: 34rpx;
+  font-weight: 600;
+  color: var(--action-text);
+}
+
+/* 角标：提示此处有新动作可点（需求 R9 —— 避免「拖动后没刷新」被误解为功能失效）。
+   描边取按钮自身底色，做成「从按钮上抠出来」的缺口效果，两种主题下都成立。 */
+.nearby-search__dot {
+  position: absolute;
+  right: -4rpx;
+  top: -10rpx;
+  width: 16rpx;
+  height: 16rpx;
+  border-radius: 50%;
+  background: var(--attention-badge-bg);
+  border: 2rpx solid var(--action-bg);
+  box-sizing: border-box;
+}
+
+/* ==================== 回到我的位置（aiming 图标） ==================== */
+.nearby-fab {
+  width: 88rpx;
+  height: 88rpx;
+  border-radius: 50%;
+  background: var(--surface-raised);
+  /* 与上方气泡保持同一套"浮层外壳"语言（见 .nearby-hint 的说明） */
+  border: 2rpx solid var(--line-subtle);
+  box-shadow: var(--elev-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+/* ==================== 居中浮层：定位被拒 / 空态 / 网络失败 / 配额耗尽 ==================== */
+.nearby-overlay {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 320rpx;
+  display: flex;
+  justify-content: center;
+  padding: 0 40rpx;
+  box-sizing: border-box;
+}
+
+.nearby-overlay__card {
+  width: 600rpx;
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24rpx;
+  padding: 48rpx;
+  background: var(--surface-raised);
+  border-radius: 40rpx;
+  box-shadow: var(--elev-3);
+  box-sizing: border-box;
+}
+
+.nearby-overlay__icon {
+  width: 96rpx;
+  height: 96rpx;
+  border-radius: 50%;
+  background: var(--surface-sunken);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nearby-overlay__title {
+  font-size: 30rpx;
+  line-height: 42rpx;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.nearby-overlay__desc {
+  font-size: 24rpx;
+  line-height: 38rpx;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.nearby-overlay__actions {
+  width: 100%;
+  display: flex;
+  gap: 24rpx;
+  margin-top: 4rpx;
+}
+
+/* 高度/字号全部由 .btn-primary / .btn-ghost 提供，这里只管均分与图标间距 */
+.nearby-overlay__btn {
+  flex: 1;
+  gap: 10rpx;
+}
+
+/* ==================== 底部抽屉（站点卡片 / 网点列表） ==================== */
+.nearby-mask {
+  position: fixed;
+  inset: 0;
+  background: var(--overlay);
+  display: flex;
+  align-items: flex-end;
+  z-index: 30;
+}
+
+.nearby-sheet {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-raised);
+  border-radius: 40rpx 40rpx 0 0;
+  box-sizing: border-box;
+}
+
+/* 列表抽屉给**确定高度**（与 .ledger-drawer 同一组值）。
+   ⚠️ 只给 max-height 不行：父级高度不确定时 flex 不会收缩，
+   内容区会被列表撑开、把底部「关闭」按钮顶出抽屉外（真机实锤）。 */
+.nearby-sheet--list {
+  height: 70vh;
+  min-height: 860rpx;
+  max-height: calc(100vh - 140rpx);
+}
+
+.nearby-sheet__handle {
+  width: 72rpx;
+  height: 8rpx;
+  border-radius: 999rpx;
+  background: var(--sheet-handle);
+  margin: 20rpx auto 24rpx;
+  flex-shrink: 0;
+}
+
+/* ---------- 屏 02：站点卡片（高度随内容） ---------- */
+.nearby-sheet__body {
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+  padding: 0 32rpx 24rpx;
+  box-sizing: border-box;
+}
+
+/* ---------- 屏 03：网点列表（内容区可滚动） ---------- */
+.nearby-sheet__list-head {
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+  padding: 0 32rpx 24rpx;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+/* flex:1 + height:0 —— 项目既有手法（.ledger-drawer__body） */
+.nearby-sheet__scroll {
+  flex: 1;
+  height: 0;
+  padding: 0 32rpx;
+  box-sizing: border-box;
+}
+
+/* 抽屉标题：设计稿 = 15/B（卡片站名与列表标题同一档），对应 30rpx/700 */
+.nearby-sheet__title {
+  font-size: 30rpx;
+  line-height: 44rpx;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* 类型标签靠左、距离靠右（对齐设计稿屏 02） */
+.nearby-sheet__tag-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+}
+
+.nearby-tag {
+  display: flex;
+  align-items: center;
+  height: 44rpx;
+  padding: 0 20rpx;
+  border-radius: 999rpx;
+  box-sizing: border-box;
+}
+
+/* 与全局 .badge 同规格（11px SemiBold） */
+.nearby-tag__text {
+  font-size: 22rpx;
+  line-height: 28rpx;
+  font-weight: 600;
+}
+
+/* 类型标签 4 态（与站点标记配色一致）。
+   类型文字本身已写明「福彩 · 双色球 / 体彩 · 大乐透 / 福彩+体彩 · 均可」，
+   颜色只是增强，不是唯一表达 —— 双营不需要只看红色。 */
+.nearby-tag--fucai {
+  background: var(--type-red-bg);
+}
+
+.nearby-tag--fucai .nearby-tag__text {
+  color: var(--ball-red-text);
+}
+
+.nearby-tag--tiyu {
+  background: var(--type-blue-bg);
+}
+
+.nearby-tag--tiyu .nearby-tag__text {
+  color: var(--ball-blue-text);
+}
+
+.nearby-tag--both {
+  background: var(--type-red-bg);
+}
+
+.nearby-tag--both .nearby-tag__text {
+  color: var(--ball-red-text);
+}
+
+.nearby-tag--unknown {
+  background: var(--neutral-badge-bg);
+}
+
+.nearby-tag--unknown .nearby-tag__text {
+  color: var(--text-muted);
+}
+
+.nearby-sheet__distance {
+  font-size: 22rpx;
+  line-height: 30rpx;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+/* 地址行：只读展示。文本用 flex:1 撑满容器宽度 —— 长地址才能正常换行而不是溢出。 */
+.nearby-sheet__address {
+  display: flex;
+  align-items: center;
+  min-height: 88rpx;
+  padding: 24rpx;
+  background: var(--surface-sunken);
+  border-radius: 24rpx;
+  box-sizing: border-box;
+}
+
+.nearby-sheet__address-text {
+  flex: 1;
+  font-size: 28rpx;
+  line-height: 40rpx;
+  color: var(--text-secondary);
+}
+
+/* 兜底微文字：POI 由腾讯地图维护，类型标签只作参考（需求 §3.4） */
+.nearby-sheet__footnote {
+  font-size: 22rpx;
+  line-height: 32rpx;
+  color: var(--text-muted);
+}
+
+.nearby-sheet__subtitle {
+  font-size: 22rpx;
+  line-height: 30rpx;
+  color: var(--text-muted);
+}
+
+/* ---------- 列表项 ---------- */
+.nearby-item {
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+  padding-top: 28rpx;
+}
+
+.nearby-item__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+}
+
+.nearby-item__name {
+  flex: 1;
+  font-size: 28rpx;
+  line-height: 40rpx;
+  font-weight: 600;
+  color: var(--text-primary);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.nearby-item__distance {
+  flex-shrink: 0;
+  font-size: 22rpx;
+  line-height: 30rpx;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.nearby-item__address {
+  font-size: 24rpx;
+  line-height: 34rpx;
+  color: var(--text-secondary);
+}
+
+.nearby-item__tag {
+  font-size: 22rpx;
+  line-height: 32rpx;
+  font-weight: 600;
+}
+
+.nearby-item__tag--fucai,
+.nearby-item__tag--both {
+  color: var(--ball-red-text);
+}
+
+.nearby-item__tag--tiyu {
+  color: var(--ball-blue-text);
+}
+
+.nearby-item__tag--unknown {
+  color: var(--text-muted);
+}
+
+.nearby-item__line {
+  margin-top: 14rpx;
+  height: 2rpx;
+  background: var(--line-subtle);
+}
+
+/* ---------- 抽屉底部操作行 ----------
+   独立底条，是内容区的兄弟节点：列表再长也压不到它。 */
+.nearby-sheet__actions {
+  display: flex;
+  gap: 24rpx;
+  padding: 20rpx 32rpx calc(env(safe-area-inset-bottom) + 32rpx);
+  background: var(--surface-raised);
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+.nearby-sheet__action {
+  flex: 1;
+  gap: 10rpx;
+}

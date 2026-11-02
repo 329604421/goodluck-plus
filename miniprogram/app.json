@@ -1,0 +1,56 @@
+{
+  "pages": [
+    "pages/home/home",
+    "pages/init/init",
+    "pages/record/record",
+    "pages/nearby/nearby",
+    "pages/recommend/recommend",
+    "pages/ledger/ledger"
+  ],
+  "window": {
+    "navigationStyle": "custom",
+    "navigationBarTextStyle": "@navTxtStyle",
+    "backgroundColor": "@bgColor",
+    "backgroundTextStyle": "@bgTxtStyle"
+  },
+  "tabBar": {
+    "custom": true,
+    "color": "@tabColor",
+    "selectedColor": "@tabSelectedColor",
+    "backgroundColor": "@tabBgColor",
+    "borderStyle": "@tabBorderStyle",
+    "list": [
+      {
+        "pagePath": "pages/home/home",
+        "text": "首页"
+      },
+      {
+        "pagePath": "pages/record/record",
+        "text": "录入"
+      },
+      {
+        "pagePath": "pages/nearby/nearby",
+        "text": "附近"
+      },
+      {
+        "pagePath": "pages/ledger/ledger",
+        "text": "台账"
+      }
+    ]
+  },
+  "permission": {
+    "scope.userLocation": {
+      "desc": "你的位置信息将用于展示附近的彩票销售网点"
+    }
+  },
+  "requiredPrivateInfos": ["getLocation"],
+  "style": "v2",
+  "darkmode": true,
+  "themeLocation": "theme.json",
+  "rendererOptions": {
+    "skyline": {
+      "defaultDisplayBlock": true
+    }
+  },
+  "sitemapLocation": "sitemap.json"
+}

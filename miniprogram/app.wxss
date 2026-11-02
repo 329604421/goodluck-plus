@@ -1,0 +1,255 @@
+/**
+ * app.wxss - 全局样式（页面骨架 / 按钮 / 卡片 / 表单）
+ * 设计稿 375px 宽 → 小程序 750rpx 基准，1px = 2rpx
+ *
+ * 主题机制（2026-10-16 深色模式）：
+ *   1. 色彩令牌**全部**在 `styles/tokens.wxss`，本文件第一行 @import 进来。
+ *      千万不要把令牌定义搬回这里的 `page{}` —— 自定义 tabBar 渲染在 page 节点
+ *      **之外**，`page{}` 上的变量继承不进去，会让底部导航整块失去颜色（已踩过一次）。
+ *   2. 本文件与各页 WXSS 一律引用令牌（var(--xxx)），不出现裸色值 ——
+ *      这样切换主题时不需要改任何一条规则；裸色值残留一处，深色下就会亮一块。
+ *   3. app.json 里 navigationBarTextStyle / backgroundColor / tabBar 用 @变量 引用
+ *      theme.json，负责原生窗口层；WXSS 令牌负责自绘层。两层都要有，缺一不可。
+ */
+
+@import "./styles/tokens.wxss";
+
+/* ==================== 页面骨架 ==================== */
+
+page {
+  background: var(--bg-page);
+  color: var(--text-primary);
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", "Microsoft YaHei", sans-serif;
+  font-size: 28rpx;
+  line-height: 1.4;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* 页面通用容器（自定义导航，无原生导航栏） */
+.page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  box-sizing: border-box;
+  background: var(--bg-page);
+}
+
+/* 顶部状态栏占位：高度由 JS 按系统值注入（px），动态适配刘海/灵动岛/Android */
+.status-bar {
+  flex-shrink: 0;
+}
+
+/* 统一导航栏：高度由 JS 按右上角胶囊对齐注入（px），标题垂直居中 */
+.nav-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-left: 40rpx;
+  padding-right: 40rpx;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+.nav-bar__title {
+  font-size: 40rpx;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* 内容区 */
+.page-content {
+  flex: 1;
+  padding-left: 40rpx;
+  padding-right: 40rpx;
+  box-sizing: border-box;
+}
+
+/* ==================== 按钮 ==================== */
+
+/* 主操作按钮（浅色墨黑 / 深色陶土橙，文字用 action-text 保证对比度） */
+.btn-primary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 104rpx;
+  background: var(--action-bg);
+  border-radius: 999rpx;
+  color: var(--action-text);
+  font-size: 32rpx;
+  font-weight: 700;
+  border: none;
+  box-sizing: border-box;
+}
+
+.btn-primary::after {
+  border: none;
+}
+
+.btn-primary[disabled] {
+  background: var(--action-bg-disabled);
+  color: var(--action-text-disabled);
+  opacity: 1;
+}
+
+/* 次级按钮（白底描边胶囊）：底比卡片亮一档 + 明确边界 */
+.btn-ghost {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 104rpx;
+  background: var(--surface-raised);
+  border-radius: 999rpx;
+  color: var(--text-primary);
+  font-size: 30rpx;
+  font-weight: 500;
+  border: 2rpx solid var(--border-control);
+  box-sizing: border-box;
+}
+
+.btn-ghost::after {
+  border: none;
+}
+
+.btn-ghost[disabled] {
+  color: var(--text-placeholder);
+  border-color: var(--line-strong);
+  background: var(--surface-pressed);
+  opacity: 1;
+}
+
+/* 按压反馈（配合 hover-class 使用）：
+   surface 类元素用 surface-pressed，action 类元素用 action-bg-pressed。
+   说明：不使用整体透明度来表现按压 —— 那会让文字一起变淡。 */
+.press-surface {
+  background-color: var(--surface-pressed);
+}
+
+.press-action {
+  background-color: var(--action-bg-pressed);
+}
+
+/* ==================== 卡片与文字 ==================== */
+
+/* 卡片（纸）：**不描边**，靠"比画布亮一档 + 双层柔和投影"浮起来。
+   2026-10-16 起弃用 2rpx 描边 —— 那条线在暖底上只有 1.14:1，等于看不见。 */
+.card {
+  background: var(--surface-card);
+  border-radius: 40rpx;
+  box-shadow: var(--elev-1);
+  box-sizing: border-box;
+}
+
+.page-title {
+  font-size: 40rpx;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.section-title {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.form-label {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+/* 选中胶囊（多选/单选通用） */
+.pill {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 96rpx;
+  border-radius: 999rpx;
+  background: var(--surface-card);
+  border: 3rpx solid var(--border-control);
+  box-sizing: border-box;
+  font-size: 28rpx;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.pill--active {
+  background: var(--selection-bg);
+  border-color: var(--selection-bg);
+  color: var(--selection-text);
+}
+
+/* 输入框 / 选择框：凹陷底 + 明确边界（3.7:1），不再依赖浅灰线 */
+.field {
+  display: flex;
+  align-items: center;
+  height: 96rpx;
+  background: var(--surface-sunken);
+  border-radius: 24rpx;
+  border: 2rpx solid var(--border-control);
+  box-sizing: border-box;
+  padding: 0 32rpx;
+}
+
+.field__input {
+  flex: 1;
+  font-size: 28rpx;
+  color: var(--text-primary);
+  height: 100%;
+  line-height: 96rpx;
+}
+
+.field__placeholder {
+  color: var(--text-placeholder);
+}
+
+/* 通用状态徽章（设计稿：11px SemiBold） */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8rpx;
+  height: 44rpx;
+  padding: 0 16rpx;
+  border-radius: 999rpx;
+  font-size: 22rpx;
+  font-weight: 600;
+  box-sizing: border-box;
+}
+
+/* 页面底部安全区（给固定 tabBar 留空间）。
+   200rpx 对应 tabBar 自身高度（20 + 124 + 44 = 188rpx）再留一点余量 ——
+   2026-10-16 曾改成 calc(260rpx + env(safe-area-inset-bottom))，属于跟着 tabBar
+   那处错误改动一起放大的，已随 tabBar 一并回退。 */
+.page-bottom-safe {
+  height: 200rpx;
+  flex-shrink: 0;
+}
+
+/* 通用状态卡 */
+.state-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 20rpx;
+  padding: 32rpx 36rpx;
+}
+
+.state-card__title {
+  font-size: 32rpx;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.state-card__desc {
+  font-size: 26rpx;
+  line-height: 40rpx;
+  color: var(--text-secondary);
+}
+
+.state-card__meta {
+  font-size: 24rpx;
+  color: var(--text-muted);
+}
+
+.state-card__action {
+  min-width: 220rpx;
+}

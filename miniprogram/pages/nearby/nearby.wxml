@@ -1,0 +1,174 @@
+<!-- pages/nearby/nearby.wxml - 「附近彩站」地图页
+     结构对照设计稿 6 屏：
+       01 首屏       → 地图 + 左上搜索结果气泡 + 底部右侧回到我的位置
+       02 点标记     → 地图中心移到该站点 + 底部站点卡片（tabBar / 气泡隐藏）
+       03 点气泡     → + 底部网点列表（tabBar / 气泡隐藏）；点列表项 = 屏 02
+       04 拖动/缩放后 → 顶部提示条 + 底部左侧「搜索此区域」（V1.10：与定位按钮同行）
+       05 定位被拒   → 居中卡片（去设置 / 重试）
+       06 空态       → 居中卡片
+
+     V1.12 地图中心联动：屏 02 弹出时地图中心移到站点，关闭卡片后退回进入前的位置，
+     全程不改变缩放级别（实现见 nearby.js 的 panTo / rememberAnchor）。
+
+     顶部沿用全站统一导航栏（.nav-bar，与首页/录入/台账一致），标题「附近彩站」。
+
+     抽屉骨架完全对齐项目既有抽屉（pages/ledger 的 .ledger-drawer）：
+       把手 → 内容区 → 底部操作行
+     操作行是内容区的**兄弟节点**、独立白底条，不随列表滚动、也不会被列表盖住。
+-->
+<view class="page nearby">
+  <view class="status-bar" style="height: {{statusBarHeight}}px;"></view>
+
+  <view class="nav-bar" style="height: {{navBarHeight}}px;">
+    <text class="nav-bar__title">附近彩站</text>
+  </view>
+
+  <view class="nearby__map-wrap" style="height: {{mapHeight}}px;">
+    <map
+      id="nearbyMap"
+      class="nearby__map"
+      latitude="{{latitude}}"
+      longitude="{{longitude}}"
+      scale="{{scale}}"
+      markers="{{markers}}"
+      show-location="{{showLocation}}"
+      enable-rotate="{{false}}"
+      subkey="{{mapSubkey}}"
+      layer-style="{{mapLayerStyle}}"
+      bindmarkertap="onMarkerTap"
+      bindtap="onMapTap"
+      bindregionchange="onRegionChange"
+    ></map>
+
+    <!-- 地图左上：搜索结果气泡（点它打开网点列表抽屉 → 屏 03）
+         2026-10-16：右侧补「查看 ›」提示 —— 此前没有任何可点的暗示，用户不会想到去点它 -->
+    <view wx:if="{{showBubble}}" class="nearby-hint nearby-hint--bubble" bindtap="onBubbleTap" hover-class="press-surface" hover-stay-time="80">
+      <icon type="local" size="{{16}}" tone="primary" />
+      <text class="nearby-hint__text">{{bubbleText}}</text>
+      <text class="nearby-hint__more">查看</text>
+      <icon type="chevron" size="{{10}}" tone="muted" />
+    </view>
+
+    <!-- 地图左上：状态提示（定位中 / 搜索中 / 地图已移动 → 屏 04） -->
+    <view wx:elif="{{hintText}}" class="nearby-hint nearby-hint--wide">
+      <icon type="search" size="{{16}}" tone="primary" />
+      <text class="nearby-hint__text">{{hintText}}</text>
+    </view>
+
+    <!-- 底部一行：左「搜索此区域」（平移/缩放后出现，带黄色角标 —— 屏 04）+ 右「回到我的位置」
+         两端各留 40rpx，与顶部浮层同一套边距刻度（V1.10 调整：原先搜索按钮单独浮在右下）。
+         容器用 justify-content:flex-end 而非 space-between ——
+         只剩「回到我的位置」时必须仍然靠右，不能因为兄弟节点消失而跑到左边。 -->
+    <view class="nearby-actions">
+      <view wx:if="{{dirty}}" class="nearby-search" bindtap="onSearchArea" hover-class="press-action" hover-stay-time="80">
+        <icon type="search" size="{{16}}" tone="on-action" />
+        <text class="nearby-search__text">搜索此区域</text>
+        <view class="nearby-search__dot"></view>
+      </view>
+
+      <!-- 回到我的位置（图标为 aiming，不要与左上气泡的 local 混用） -->
+      <view class="nearby-fab" bindtap="onBackToMe" hover-class="press-surface" hover-stay-time="80">
+        <icon type="aiming" size="{{22}}" tone="primary" />
+      </view>
+    </view>
+
+    <!-- 居中浮层：定位被拒 / 空态 / 网络失败 / 配额耗尽（屏 05 / 06） -->
+    <view wx:if="{{overlay}}" class="nearby-overlay">
+      <view class="nearby-overlay__card">
+        <view class="nearby-overlay__icon">
+          <icon type="{{overlay.icon}}" size="{{24}}" tone="primary" />
+        </view>
+        <text class="nearby-overlay__title">{{overlay.title}}</text>
+        <text class="nearby-overlay__desc">{{overlay.desc}}</text>
+        <!-- 按钮直接复用全局 .btn-primary / .btn-ghost，与首页、台账完全同一套 -->
+        <view wx:if="{{overlay.actions.length}}" class="nearby-overlay__actions">
+          <button
+            wx:for="{{overlay.actions}}"
+            wx:key="key"
+            class="{{item.kind === 'primary' ? 'btn-primary' : 'btn-ghost'}} nearby-overlay__btn"
+            data-key="{{item.key}}"
+            bindtap="onOverlayAction"
+          >
+            <icon
+              wx:if="{{item.icon}}"
+              type="{{item.icon}}"
+              size="{{16}}"
+              tone="{{item.kind === 'primary' ? 'on-action' : 'primary'}}"
+            />
+            <text>{{item.text}}</text>
+          </button>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 底部抽屉：站点卡片（屏 02）/ 网点列表（屏 03）
+       抽屉打开期间隐藏 tabBar 与左上气泡；关闭后一并恢复（需求 §3.2.1） -->
+  <view wx:if="{{panel}}" class="nearby-mask" catchtap="onClosePanel">
+    <view class="nearby-sheet nearby-sheet--{{panel}}" catchtap="noop">
+      <view class="nearby-sheet__handle"></view>
+
+      <!-- 屏 02：站点卡片（高度随内容，按钮在最后一行） -->
+      <block wx:if="{{panel === 'card'}}">
+        <view class="nearby-sheet__body">
+          <text class="nearby-sheet__title">{{selectedStation.name}}</text>
+
+          <view class="nearby-sheet__tag-row">
+            <view class="nearby-tag nearby-tag--{{selectedStation.type}}">
+              <text class="nearby-tag__text">{{selectedStation.typeLabel}}</text>
+            </view>
+            <text class="nearby-sheet__distance">{{selectedStation.distanceText}}</text>
+          </view>
+
+          <!-- 地址只读展示：复制功能已下线，导航改由右下「导航」按钮唤起地图 App（需求 §3.6） -->
+          <view class="nearby-sheet__address">
+            <text class="nearby-sheet__address-text">{{selectedStation.address}}</text>
+          </view>
+
+          <!-- 兜底微文字：POI 由腾讯地图维护，类型标签只作参考（需求 §3.4） -->
+          <text class="nearby-sheet__footnote">网点经营类型以现场为准</text>
+        </view>
+
+        <view class="nearby-sheet__actions">
+          <button class="btn-ghost nearby-sheet__action" bindtap="onClosePanel">关闭</button>
+          <button class="btn-primary nearby-sheet__action" bindtap="onNavigate">
+            <icon type="navigation" size="{{18}}" tone="on-action" />
+            <text>导航</text>
+          </button>
+        </view>
+      </block>
+
+      <!-- 屏 03：网点列表（列表在 __scroll 内独立滚动，底部「关闭」常驻可见） -->
+      <block wx:else>
+        <view class="nearby-sheet__list-head">
+          <text class="nearby-sheet__title">附近网点</text>
+          <text class="nearby-sheet__subtitle">{{listSubtitle}}</text>
+        </view>
+
+        <scroll-view class="nearby-sheet__scroll" scroll-y enhanced show-scrollbar="{{false}}">
+          <view
+            class="nearby-item"
+            wx:for="{{stations}}"
+            wx:key="id"
+            data-index="{{index}}"
+            bindtap="onListItemTap"
+            hover-class="press-surface"
+            hover-stay-time="80"
+          >
+            <view class="nearby-item__row">
+              <text class="nearby-item__name">{{item.name}}</text>
+              <text class="nearby-item__distance">{{item.distanceText}}</text>
+            </view>
+            <text class="nearby-item__address">{{item.address}}</text>
+            <text class="nearby-item__tag nearby-item__tag--{{item.type}}">{{item.typeLabel}}</text>
+            <view class="nearby-item__line"></view>
+          </view>
+        </scroll-view>
+
+        <view class="nearby-sheet__actions">
+          <button class="btn-ghost nearby-sheet__action" bindtap="onClosePanel">关闭</button>
+        </view>
+      </block>
+    </view>
+  </view>
+</view>

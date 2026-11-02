@@ -1,0 +1,31 @@
+# 统一按 LF 存储，避免 Windows 下 diff 出现「上千行全变」
+* text=auto eol=lf
+
+# 显式声明为二进制，禁止任何换行转换
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.pdf binary
+*.zip binary
+
+# 小程序 / 前端源码（LF）
+*.js   text eol=lf
+*.json text eol=lf
+*.ts   text eol=lf
+*.wxml text eol=lf
+*.wxss text eol=lf
+*.ink  text eol=lf
+*.html text eol=lf
+*.css  text eol=lf
+*.md   text eol=lf
+*.yml  text eol=lf
+*.sql  text eol=lf
+*.prisma text eol=lf
+
+# 脚本保留原有行尾
+*.sh   text eol=lf
+*.bat  text eol=crlf
+*.cmd  text eol=crlf

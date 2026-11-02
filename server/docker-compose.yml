@@ -1,0 +1,55 @@
+# 本地开发：docker compose up -d mysql（只起数据库即可）
+# 生产部署：docker compose up -d（全量）
+services:
+  app:
+    build: .
+    env_file:
+      - .env
+    environment:
+      TZ: Asia/Shanghai
+    depends_on:
+      mysql:
+        condition: service_healthy
+    restart: always
+
+  nginx:
+    image: nginx:stable
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/nginx:/etc/nginx/conf.d
+      - ./docker/certs:/etc/nginx/certs
+    depends_on:
+      - app
+    restart: always
+    profiles: ["prod"]
+
+  mysql:
+    image: mysql:8.0
+    ports:
+      - "3306:3306"
+    # 凭据一律从 .env 读取（见 .env.example），不在此处写死
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-lottery_helper}
+      MYSQL_USER: ${MYSQL_USER:-lottery}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?MYSQL_PASSWORD 未设置，请先在 .env 中填写}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD 未设置，请先在 .env 中填写}
+      TZ: Asia/Shanghai
+    command: >
+      --default-authentication-plugin=mysql_native_password
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+      --default-time-zone=+08:00
+    volumes:
+      - mysql_data:/var/lib/mysql
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p$$MYSQL_ROOT_PASSWORD"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+volumes:
+  mysql_data:

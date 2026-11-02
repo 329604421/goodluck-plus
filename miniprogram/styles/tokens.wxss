@@ -1,0 +1,196 @@
+/**
+ * styles/tokens.wxss —— 语义色彩令牌（唯一真相源）· 配色方案 V2.0「暖纸 · 暖炭」
+ *
+ * 依据：《小程序配色方案_V2.0.md》（2026-10-16 已确认实施）
+ *   品牌（goodluck-logo-design.md「温暖秩序」）：炭黑 #242320 · 杏橙 #ED945F · 暖白 #FAF7F0
+ *   模型：把界面当纸 —— 三级台面 + 一层凹陷
+ *     浅色  画布 #F1ECE2 暖砂  →  卡片 #FAF7F0 品牌暖白  →  浮层 #FFFFFF 纯白
+ *     深色  画布 #14110D 暖黑  →  卡片 #211D17 暖褐      →  浮层 #2B2620
+ *     凹陷（输入框 / 信息块）浅 #EAE3D4 · 深 #1A1712
+ *   ★ 层级靠「明度台阶 + 柔和投影」，**不靠描边**：
+ *     浅色用 --elev-* 投影表达"浮起来"，深色把 --elev-* 置为 none、改用台面明度差
+ *     （标准 elevation 模型：同一套令牌、两种实现手段，不是两套逻辑）。
+ *   ★ --border-control 只负责"这里能输入 / 能点选"，必须看得见（≥3:1）。
+ *     旧的卡片描边 #EEF0F3 只有 1.14:1 —— 以为有、实际看不见，那才是"轮廓太细"的真因。
+ *
+ * 为什么要单独抽一个文件（2026-10-16 事故）：
+ *   自定义 tabBar（custom-tab-bar/）**渲染在 page 节点之外**，是 page 的兄弟节点，
+ *   因此 `page { --x: ... }` 的 CSS 变量**继承不进去**，组件里每条 var() 会被静默丢弃
+ *   （症状：底部导航胶囊底色/边框/选中黑底全消失，且不报任何错）。
+ *   所以这里用「两个消费者都能匹配到」的选择器：page（普通页面）+ .tabbar（自定义 tabBar 根节点），
+ *   由 app.wxss 与 custom-tab-bar/index.wxss **各自 @import**。
+ *   ⚠️ 新增任何**脱离 page 的组件**时，把它的根类名加进下面两个选择器列表，不要另抄色值。
+ *
+ * 令牌命名以「职责」为单位，不按颜色本身命名 —— 同一色值在不同位置职责不同
+ * （文字 / 实心填充 / 状态底），命名必须能区分。
+ *
+ * 全部配对对比度由 _dev_tools/check_palette_contrast.py 实算复核。
+ */
+
+page,
+.tabbar {
+  /* ============ 浅色 · 基础台面（三级纸 + 一层凹陷） ============ */
+  --bg-page: #F1ECE2;          /* 画布（桌面） */
+  --surface-card: #FAF7F0;     /* 卡片（纸）· 品牌暖白 */
+  --surface-raised: #FFFFFF;   /* 浮层（抽屉 / 悬浮导航 / 地图气泡）· 唯一纯白 */
+  --surface-sunken: #EAE3D4;   /* 凹陷：输入框 / 信息块 / 分段容器 / 内嵌面板 */
+  --surface-pressed: #E2DAC8;  /* 按压态 */
+  --line-subtle: #E3DCCC;      /* 装饰性分隔线（不参与可读性判定） */
+  --line-strong: #D6CDB9;      /* 卡片内分组线 */
+  --border-control: #8A7F69;   /* 控件必要边界（3.7:1，从 1.14 提上来） */
+
+  /* ============ 浅色 · 文字 ============ */
+  --text-primary: #242320;     /* 品牌炭黑 */
+  --text-secondary: #575046;
+  --text-muted: #6B6355;       /* 日期 / 微文字（5.5:1） */
+  --text-placeholder: #7A7264;
+  --text-disabled: #B3AA98;    /* 真·不可操作内容 */
+
+  /* ============ 浅色 · 操作与强调 ============ */
+  --action-bg: #242320;        /* 主操作：浅色用炭黑（"清晰和可信赖的基调"） */
+  --action-text: #FAF7F0;
+  --action-text-sub: #A79F92;  /* 主按钮内的副文字 */
+  --action-bg-pressed: #3A3833;
+  --action-bg-disabled: #E2DAC8;
+  --action-text-disabled: #7A7264;
+
+  --selection-bg: #242320;     /* 分段 / Tab 选中：浅色实心炭黑 */
+  --selection-text: #FAF7F0;
+  --accent-strong: #A94D16;    /* 杏橙做文字/图标时的深档（实心橙做不出 4.5:1） */
+
+  /* ============ 浅色 · 状态 ============ */
+  --attention-bg: #FBEAC0;     /* 待兑奖卡（全站唯一允许大面积暖色块的卡片） */
+  --attention-text: #8A5A12;
+  --attention-badge-bg: #F0B429; /* 琥珀（原亮黄 #FFD02F 太柠檬，暖砂底上发酸） */
+  --attention-badge-text: #2A2418;
+
+  --reward-text: #8F5A07;      /* 中奖金额（原金 #F5A623 仅 2.03:1） */
+  --success-bg: #E3EDDB;
+  --success-text: #3D6A38;
+  --danger-bg: #F6DEDA;
+  --danger-text: #A23124;
+  --neutral-badge-bg: #EAE3D4;
+  --neutral-badge-text: #575046;
+  --strong-badge-bg: #242320;  /* 「待开奖」等中性但要压得住场的小标签 */
+  --strong-badge-text: #FAF7F0;
+
+  --overlay: rgba(36, 35, 32, 0.42);  /* 暖黑遮罩，不是中性黑 */
+  --sheet-handle: #9A9080;
+  /* 取景器引导线：相机画面本身永远是暗的，与本页主题底色无关，
+     因此这个令牌在浅色与深色下**保持同值**，不随主题变化。 */
+  --camera-guide: #FFD02F;
+
+  /* 底部浮层底板渐变（透明 → 不透明），三档必须同色系，否则渐变会偏色 */
+  --scrim-0: rgba(241, 236, 226, 0);
+  --scrim-1: rgba(241, 236, 226, 0.78);
+  --scrim-2: rgba(241, 236, 226, 0.94);
+
+  /* 层级投影：浅色靠它表达"浮起来"。双层 —— 近处压出边缘，远处给出浮起量。 */
+  --elev-1: 0 1rpx 2rpx rgba(36, 35, 32, 0.05), 0 6rpx 20rpx rgba(36, 35, 32, 0.06);
+  --elev-2: 0 2rpx 6rpx rgba(36, 35, 32, 0.06), 0 16rpx 40rpx rgba(36, 35, 32, 0.10);
+  --elev-3: 0 4rpx 12rpx rgba(36, 35, 32, 0.08), 0 24rpx 64rpx rgba(36, 35, 32, 0.16);
+
+  /* ============ 浅色 · 号码与网点类型 ============ */
+  --ball-red-fill: #C93A34;    /* 暖红（正红偏朱），替掉原来的 #E63946 */
+  --ball-blue-fill: #2F4FA8;   /* 深靛蓝，替掉电光紫蓝 #4262FF */
+  --ball-on-fill: #FBF9F4;
+  --ball-muted-fill: #DCD4C4;
+  --ball-muted-text: #575046;
+  --ball-red-text: #B32B26;    /* 文字态另给一档（实心红做不出 4.5:1） */
+  --ball-blue-text: #2A4795;
+  --type-red-bg: #F8E2DC;
+  --type-blue-bg: #E2E7F5;
+
+  /* ============ 浅色 · 热力图（暖绿，金额由浅到深） ============ */
+  --heat-0: #E9E4D8;
+  --heat-1: #CBDFA9;
+  --heat-2: #A4C77E;
+  --heat-3: #6FA95C;
+  --heat-4: #3F7A46;
+  --heat-ring: #242320;
+}
+
+/**
+ * 深色覆盖（跟随微信/系统主题）·「暖炭」
+ * 只覆盖令牌值，不重写任何规则。
+ * 选择器必须与上面那份**逐个对应**，漏掉 .tabbar 会让底部导航在深色下整块消失。
+ */
+@media (prefers-color-scheme: dark) {
+  page,
+  .tabbar {
+    --bg-page: #14110D;          /* 暖黑（去掉 V1 #171819 的中性青味） */
+    --surface-card: #211D17;
+    --surface-raised: #2B2620;
+    --surface-sunken: #1A1712;
+    --surface-pressed: #332D25;
+    --line-subtle: #332E26;
+    --line-strong: #3D372D;
+    --border-control: #736A58;
+
+    --text-primary: #F5F1E7;
+    --text-secondary: #BCB3A4;
+    --text-muted: #948B7D;
+    --text-placeholder: #948B7D;
+    --text-disabled: #6B6255;
+
+    --action-bg: #ED945F;        /* 深色主操作 = 品牌杏橙（炭黑在深色下会消失） */
+    --action-text: #241A12;
+    --action-text-sub: #4A3A2C;
+    --action-bg-pressed: #E09159;
+    --action-bg-disabled: #332D25;
+    --action-text-disabled: #8A8171;
+
+    /* 深色选中：杏橙软底 + 浅橙字。
+       注意这个值不能太浅 —— 底部导航的选中项落在 --surface-raised(#2B2620) 上，
+       若取 #3A2A1D 则只有 1.09:1，等于看不出"选中了哪一项"。#523A22 在浮层上 1.42、
+       在凹陷的分段容器上 1.69，同时选中的橙字仍有 5.38:1。 */
+    --selection-bg: #523A22;
+    --selection-text: #F0A97E;
+    --accent-strong: #ED945F;
+
+    --attention-bg: #382D19;
+    --attention-text: #E8C27A;
+    --attention-badge-bg: #E8C27A;
+    --attention-badge-text: #241A12;
+
+    --reward-text: #E8C27A;
+    --success-bg: #212F1E;
+    --success-text: #8CCF86;
+    --danger-bg: #3A221E;
+    --danger-text: #F0998A;
+    --neutral-badge-bg: #332D25;
+    --neutral-badge-text: #BCB3A4;
+    --strong-badge-bg: #332D25;
+    --strong-badge-text: #BCB3A4;
+
+    --overlay: rgba(0, 0, 0, 0.66);
+    --sheet-handle: #948B7D;
+    --camera-guide: #FFD02F;
+    --scrim-0: rgba(20, 17, 13, 0);
+    --scrim-1: rgba(20, 17, 13, 0.78);
+    --scrim-2: rgba(20, 17, 13, 0.94);
+
+    /* 深色**不用投影**（深色投影等于看不见），层级改由台面明度差承担。
+       置为 none 而不是删掉令牌 —— 保持两种主题的令牌集合完全一致。 */
+    --elev-1: none;
+    --elev-2: none;
+    --elev-3: none;
+
+    --ball-red-fill: #B3352F;
+    --ball-blue-fill: #33509E;
+    --ball-on-fill: #F7F2E8;
+    --ball-muted-fill: #332D25;
+    --ball-muted-text: #BCB3A4;
+    --ball-red-text: #F08A80;
+    --ball-blue-text: #93AEE8;
+    --type-red-bg: #3A231F;
+    --type-blue-bg: #232C42;
+
+    --heat-0: #332D25;
+    --heat-1: #2C4626;
+    --heat-2: #3F6335;
+    --heat-3: #5D8F4B;
+    --heat-4: #8CC47A;
+    --heat-ring: #F0A273;
+  }
+}

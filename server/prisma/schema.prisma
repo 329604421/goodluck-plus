@@ -1,0 +1,233 @@
+// Prisma Schema —— 彩票小助手（对齐《服务端后台开发技术文档_V1.2》§7.3）
+// 金额单位统一「分」；球号统一两位字符串（JSON 数组存储）
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        BigInt    @id @default(autoincrement())
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  // 微信登录 openid（同一微信号多端同一用户；2026-08-21 手动 ALTER TABLE，
+  // 服务端经 $queryRaw 访问，Prisma client 暂未重新 generate，后续统一 migrate）
+  openid    String?   @unique @db.VarChar(64)
+
+  deviceTokens    DeviceToken[]
+  userConfig      UserConfig?
+  tickets         Ticket[]
+  redeemRecords   RedeemRecord[]
+  recommendations RecommendationCache[]
+  heatmapStats    HeatmapDailyStat[]
+
+  @@map("users")
+}
+
+model DeviceToken {
+  id          BigInt    @id @default(autoincrement())
+  userId      BigInt    @map("user_id")
+  deviceToken String    @unique @db.VarChar(128) @map("device_token")
+  clientType  String    @default("wechat_mp") @db.VarChar(32) @map("client_type")
+  status      Int       @default(1) @db.TinyInt
+  lastSeenAt  DateTime? @map("last_seen_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@map("device_tokens")
+}
+
+// Rokid 眼镜端口令绑定（2026-08-25 改造说明 §6.1）：
+// 口令 = R{userId}-{code}，长期有效无过期；codeHash 存 sha256(userId+code+salt)；
+// 服务端经 $queryRaw/$executeRaw 访问（Prisma client 未 regenerate，后续统一 migrate）。
+model RokidPasscode {
+  id        BigInt   @id @default(autoincrement())
+  userId    BigInt   @unique
+  codeHash  String   @db.VarChar(64)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("rokid_passcode")
+}
+
+model UserConfig {
+  id                BigInt    @id @default(autoincrement())
+  userId            BigInt    @unique @map("user_id")
+  name              String?   @db.VarChar(64)
+  gender            String?   @db.VarChar(16)
+  birth             DateTime? @db.Date
+  lotteryType       String?   @db.VarChar(16) @map("lottery_type")
+  divinationSystem String?   @db.VarChar(32) @map("divination_system")
+  rawPayload        Json?
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("user_configs")
+}
+
+model Ticket {
+  id              BigInt    @id @default(autoincrement())
+  userId          BigInt    @map("user_id")
+  lotteryType     String    @db.VarChar(16) @map("lottery_type")
+  lotteryName     String?   @db.VarChar(32) @map("lottery_name")
+  period          String    @db.VarChar(32)
+  drawDate        DateTime? @db.Date @map("draw_date")
+  betCount        Int       @default(0) @map("bet_count")
+  multiplier      Int       @default(1)
+  totalAmountCent Int       @default(0) @map("total_amount_cent")
+  status          String    @default("pending") @db.VarChar(16)
+  winAmountCent   Int       @default(0) @map("win_amount_cent")
+  prizeLevel      String?   @db.VarChar(32) @map("prize_level")
+  source          String    @default("ocr") @db.VarChar(16)
+  photoUrl        String?   @db.VarChar(512) @map("photo_url")
+  ocrStatus       String?   @db.VarChar(32) @map("ocr_status")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  user         User          @relation(fields: [userId], references: [id])
+  bets         TicketBet[]
+  redeemRecord RedeemRecord?
+
+  @@index([userId])
+  @@index([lotteryType, period])
+  @@map("tickets")
+}
+
+model TicketBet {
+  id         BigInt   @id @default(autoincrement())
+  ticketId   BigInt   @map("ticket_id")
+  betIndex   Int      @default(1) @map("bet_index")
+  redBalls   Json     @map("red_balls")
+  blueBalls  Json     @map("blue_balls")
+  mult       Int      @default(1)
+  matchedRed Int      @default(0) @map("matched_red")
+  matchedBlue Int     @default(0) @map("matched_blue")
+  isWin      Int      @default(0) @db.TinyInt @map("is_win")
+  prizeLevel String?  @db.VarChar(32) @map("prize_level")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  ticket Ticket @relation(fields: [ticketId], references: [id])
+
+  @@index([ticketId])
+  @@map("ticket_bets")
+}
+
+model DrawResult {
+  id            BigInt    @id @default(autoincrement())
+  lotteryType   String    @db.VarChar(16) @map("lottery_type")
+  period        String    @db.VarChar(32)
+  drawDate      DateTime? @db.Date @map("draw_date")
+  redBalls      Json      @map("red_balls")
+  blueBalls     Json      @map("blue_balls")
+  prizePoolCent BigInt?   @map("prize_pool_cent")
+  sourceName    String?   @db.VarChar(64) @map("source_name")
+  sourceUrl     String?   @db.VarChar(512) @map("source_url")
+  sourceRaw     Json?     @map("source_raw")
+  syncStatus    String    @default("synced") @db.VarChar(16) @map("sync_status")
+  syncedAt      DateTime? @map("synced_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  @@unique([lotteryType, period])
+  @@map("draw_results")
+}
+
+// 全局彩种缓存，不含 per-user 字段（purchased 由 /api/lottery/status 动态计算）
+model LotteryStatus {
+  id              BigInt    @id @default(autoincrement())
+  lotteryType     String    @unique @db.VarChar(16) @map("lottery_type")
+  currentIssue    String?   @db.VarChar(32) @map("current_issue")
+  periodText      String?   @db.VarChar(64) @map("period_text")
+  drawDate        DateTime? @map("draw_date")
+  prizePoolAmount String?   @db.VarChar(32) @map("prize_pool_amount")
+  winningNumbers  Json?     @map("winning_numbers")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  @@map("lottery_status")
+}
+
+model RedeemRecord {
+  id            BigInt    @id @default(autoincrement())
+  ticketId      BigInt    @unique @map("ticket_id")
+  userId        BigInt    @map("user_id")
+  lotteryType   String    @db.VarChar(16) @map("lottery_type")
+  period        String    @db.VarChar(32)
+  status        String    @default("pending") @db.VarChar(16)
+  amountCent    Int       @default(0) @map("amount_cent")
+  prizeLevel    String?   @db.VarChar(32) @map("prize_level")
+  deadlineDate  DateTime? @db.Date @map("deadline_date")
+  redeemChannel String?   @db.VarChar(16) @map("redeem_channel")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  ticket Ticket @relation(fields: [ticketId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@map("redeem_records")
+}
+
+model RecommendationCache {
+  id               BigInt   @id @default(autoincrement())
+  userId           BigInt   @map("user_id")
+  recommendDate    DateTime @db.Date @map("recommend_date")
+  lotteryType      String   @db.VarChar(16) @map("lottery_type")
+  divinationSystem String   @db.VarChar(32) @map("divination_system")
+  resultJson       Json     @map("result_json")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([userId, recommendDate, lotteryType, divinationSystem])
+  @@map("recommendation_cache")
+}
+
+model HeatmapDailyStat {
+  id          BigInt   @id @default(autoincrement())
+  userId      BigInt   @map("user_id")
+  date        DateTime @db.Date
+  level       Int      @default(0) @db.TinyInt
+  amountCent  Int      @default(0) @map("amount_cent")
+  ticketCount Int      @default(0) @map("ticket_count")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([userId, date])
+  @@map("heatmap_daily_stats")
+}
+
+model JobRun {
+  id         BigInt    @id @default(autoincrement())
+  jobName    String    @db.VarChar(64) @map("job_name")
+  status     String    @db.VarChar(16)
+  startedAt  DateTime  @map("started_at")
+  finishedAt DateTime? @map("finished_at")
+  error      String?   @db.Text
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  @@index([jobName, startedAt])
+  @@map("job_runs")
+}
+
+model ExternalCallLog {
+  id        BigInt   @id @default(autoincrement())
+  provider  String   @db.VarChar(32)
+  endpoint  String   @db.VarChar(128)
+  status    String   @db.VarChar(16)
+  costMs    Int      @map("cost_ms")
+  request   Json?
+  response  Json?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([provider, createdAt])
+  @@map("external_call_logs")
+}

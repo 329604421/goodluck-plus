@@ -1,0 +1,98 @@
+<!-- pages/init/init.wxml - 首次配置（设计稿 Screen1） -->
+<view class="page">
+  <view class="status-bar" style="height: {{statusBarHeight}}px;"></view>
+
+  <!-- 统一导航栏 -->
+  <view class="nav-bar" style="height: {{navBarHeight}}px;">
+    <text class="nav-bar__title">用户配置</text>
+  </view>
+
+  <view class="page-content init">
+    <!-- 副标题 -->
+    <view class="init__header">
+      <text class="init__subtitle">完善以下信息，开启你的趣味购彩之旅</text>
+    </view>
+
+    <!-- 默认推演模式（单选） -->
+    <view class="form-group">
+      <text class="form-label">默认推演模式</text>
+      <view class="pills">
+        <view
+          class="pill {{system === item.value ? 'pill--active' : ''}}"
+          wx:for="{{systemOptions}}"
+          wx:key="value"
+          data-value="{{item.value}}"
+          bindtap="selectSystem"
+        >
+          <text>{{item.label}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 优先彩票种类（单选） -->
+    <view class="form-group">
+      <text class="form-label">优先彩票种类</text>
+      <view class="pills">
+        <button
+          class="pill init-pill {{lotterySelectedMap[item.value] ? 'pill--active' : ''}}"
+          wx:for="{{lotteryOptions}}"
+          wx:key="value"
+          data-value="{{item.value}}"
+          bindtap="selectLottery"
+          hover-class="pill--press"
+          hover-stay-time="80"
+        >
+          <text>{{item.label}}</text>
+        </button>
+      </view>
+    </view>
+
+    <!-- 姓名 -->
+    <view class="form-group">
+      <text class="form-label">姓名</text>
+      <view class="field">
+        <input
+          class="field__input"
+          placeholder="请输入姓名"
+          placeholder-class="field__placeholder"
+          value="{{name}}"
+          bindinput="onNameInput"
+        />
+      </view>
+    </view>
+
+    <!-- 性别（单选） -->
+    <view class="form-group">
+      <text class="form-label">性别</text>
+      <view class="pills">
+        <view
+          class="pill {{gender === item.value ? 'pill--active' : ''}}"
+          wx:for="{{genderOptions}}"
+          wx:key="value"
+          data-value="{{item.value}}"
+          bindtap="selectGender"
+        >
+          <text>{{item.label}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 出生日期 -->
+    <view class="form-group">
+      <text class="form-label">出生日期</text>
+      <picker mode="date" value="{{birth}}" start="1930-01-01" end="{{maxBirthDate}}" bindchange="onBirthChange">
+        <view class="field field--between">
+          <text class="field__value">{{birth}}</text>
+          <icon type="chevron" size="{{20}}" tone="muted" />
+        </view>
+      </picker>
+    </view>
+
+    <!-- 占位 -->
+    <view class="init__spacer"></view>
+
+    <!-- 完成配置 -->
+    <button class="btn-primary init__cta" bindtap="onSubmit">完成配置</button>
+    <text class="init__helper">你的配置会同步用于首页提醒、趣味推荐与购彩台账。</text>
+  </view>
+</view>

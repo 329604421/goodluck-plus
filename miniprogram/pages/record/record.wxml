@@ -1,0 +1,193 @@
+<!-- pages/record/record.wxml - 录入彩票（设计稿 Screen3：OCR 识别确认） -->
+<view class="page">
+  <view class="status-bar" style="height: {{statusBarHeight}}px;"></view>
+
+  <!-- 统一导航栏（与胶囊对齐） -->
+  <view class="nav-bar" style="height: {{navBarHeight}}px;">
+    <text class="nav-bar__title">录入彩票</text>
+  </view>
+
+  <view class="page-content record">
+    <view wx:if="{{captureStage !== 'result'}}" class="card capture-card">
+      <view class="capture-card__header">
+        <text class="capture-card__title">拍摄彩票正面</text>
+        <text class="capture-card__desc">{{captureStage === 'recognizing' ? 'OCR识别中，请稍候...' : '请将整张彩票放入取景框内，保持画面清晰稳定。'}}</text>
+      </view>
+
+      <view class="camera-shell">
+        <!-- 2026-09-04 修复：相机在识别中保持挂载（此前 wx:if 在 takePhoto 前销毁相机组件，
+             真机 takePhoto 永久挂起 → 误报"拍照超时"，小米实锤）。识别中改为叠加遮罩层 -->
+        <camera
+          wx:if="{{captureStage !== 'result'}}"
+          class="camera-preview"
+          device-position="back"
+          flash="off"
+        ></camera>
+        <view wx:if="{{captureStage === 'recognizing'}}" class="camera-recognizing-mask">
+          <text class="camera-preview__status">OCR识别中</text>
+          <text class="camera-preview__hint">正在读取期号、号码与投注金额</text>
+        </view>
+
+      <view class="camera-guide camera-guide--tl"></view>
+      <view class="camera-guide camera-guide--tr"></view>
+      <view class="camera-guide camera-guide--bl"></view>
+      <view class="camera-guide camera-guide--br"></view>
+      </view>
+    </view>
+
+    <!-- 识别结果卡片 -->
+    <view wx:elif="{{ocr}}" class="card result-card">
+      <view class="result-card__top">
+        <view class="result-card__meta">
+          <view class="result-card__text">
+            <text class="result-card__title">{{ocr.lotteryName}}</text>
+            <text class="result-card__period">{{ocr.period}} · {{ocr.drawDate}}</text>
+          </view>
+        </view>
+        <!-- 识别质量状态（2026-10-16 拆色）：自动识别=暗金，已手动校对=成功色 -->
+        <view class="ocr-badge ocr-badge--{{ocr.ocrStatus === '已手动校对' ? 'verified' : 'auto'}}">
+          <text class="ocr-badge__text">{{ocr.ocrStatus}}</text>
+        </view>
+      </view>
+
+      <!-- 投注号码（5 注，红蓝圆球 + 右侧倍数） -->
+      <view class="bets">
+        <text class="bets__hint">投注号码 · 点击号码行可手动校对 · 共 {{ocr.betCount}} 注</text>
+
+        <view class="bet-row bet-row--editable" wx:for="{{ocr.bets}}" wx:key="id" data-index="{{index}}" bindtap="onEditBet">
+          <view class="bet-row__nums">
+            <view class="ball ball--red" wx:for="{{item.red}}" wx:for-item="num" wx:key="*this">{{num}}</view>
+            <text class="bet-row__dash">-</text>
+            <view class="ball ball--blue" wx:for="{{item.blue}}" wx:for-item="num" wx:key="*this">{{num}}</view>
+          </view>
+          <view class="bet-row__tail">
+            <text class="bet-row__mult">*{{item.mult}}</text>
+            <icon type="chevron" size="{{16}}" tone="muted" />
+          </view>
+        </view>
+      </view>
+
+      <!-- 金额汇总 -->
+      <view class="amount-row">
+        <text class="amount-row__label">{{ocr.amountSummaryText}}</text>
+        <text class="amount-row__value">{{ocr.totalAmount}}</text>
+      </view>
+    </view>
+
+    <view wx:if="{{captureStage === 'result'}}" class="record__actions">
+      <button class="btn-ghost record__retake" bindtap="onRetake">重新拍照</button>
+      <button
+        class="btn-primary record__confirm"
+        bindtap="onPrimaryAction"
+        loading="{{saving}}"
+        disabled="{{saving}}"
+      >确定存档</button>
+    </view>
+
+    <!-- 取景态：相册选图与主按钮并排（开发者工具无摄像头 / 真机备选）
+         2026-10-16 按钮文案按阶段区分：取景态「拍照识别」、识别态「识别中…」、结果态「确定存档」 -->
+    <view wx:elif="{{captureStage === 'camera'}}" class="record__actions">
+      <button class="btn-ghost record__album" bindtap="chooseFromAlbum">相册中选取</button>
+      <button class="btn-primary record__confirm" bindtap="onPrimaryAction">拍照识别</button>
+    </view>
+
+    <button
+      wx:else
+      class="btn-primary record__confirm record__confirm--single"
+      bindtap="onPrimaryAction"
+      loading="{{captureStage === 'recognizing'}}"
+      disabled="{{captureStage === 'recognizing'}}"
+    >识别中…</button>
+
+    <!-- 底部占位（给 tabBar 留空间） -->
+    <view class="page-bottom-safe"></view>
+  </view>
+
+  <view wx:if="{{editorVisible}}" class="editor-mask" catchtap="closeEditor">
+    <view class="editor-drawer" catchtap="noop">
+      <view class="editor-drawer__handle"></view>
+
+      <view class="editor-drawer__header">
+        <view class="editor-drawer__title-row">
+          <text class="editor-drawer__title">手动校对号码</text>
+          <view class="editor-drawer__tag">
+            <text>{{editorRule.lotteryName}}</text>
+          </view>
+        </view>
+        <text class="editor-drawer__desc">点击号码圆圈即可切换选中状态，保存后会自动重新计算投注金额。</text>
+      </view>
+
+      <!-- 当前已选号码预览（红球 - 蓝球 区隔，2026-08-20 新增） -->
+      <view wx:if="{{editorPreviewRed.length || editorPreviewBlue.length}}" class="editor-drawer__preview">
+        <view class="editor-drawer__preview-balls">
+          <view class="ball ball--red" wx:for="{{editorPreviewRed}}" wx:for-item="num" wx:key="*this">{{num}}</view>
+          <text class="bet-row__dash">-</text>
+          <view class="ball ball--blue" wx:for="{{editorPreviewBlue}}" wx:for-item="num" wx:key="*this">{{num}}</view>
+        </view>
+      </view>
+
+      <scroll-view class="editor-drawer__body" scroll-y enhanced show-scrollbar="{{false}}">
+        <view class="editor-panel">
+          <view class="editor-panel__header">
+            <text class="editor-panel__title">{{editorRule.redLabel}}</text>
+            <text class="editor-panel__summary">{{editorRedSummary}}</text>
+          </view>
+          <view class="editor-ball-grid">
+            <view
+              class="editor-ball editor-ball--red {{item.selected ? 'editor-ball--selected' : ''}}"
+              wx:for="{{editorRedOptions}}"
+              wx:key="value"
+              data-area="red"
+              data-value="{{item.value}}"
+              bindtap="onToggleEditorBall"
+            >
+              <text>{{item.value}}</text>
+            </view>
+          </view>
+        </view>
+
+        <view class="editor-panel">
+          <view class="editor-panel__header">
+            <text class="editor-panel__title">{{editorRule.blueLabel}}</text>
+            <text class="editor-panel__summary">{{editorBlueSummary}}</text>
+          </view>
+          <view class="editor-ball-grid">
+            <view
+              class="editor-ball editor-ball--blue {{item.selected ? 'editor-ball--selected' : ''}}"
+              wx:for="{{editorBlueOptions}}"
+              wx:key="value"
+              data-area="blue"
+              data-value="{{item.value}}"
+              bindtap="onToggleEditorBall"
+            >
+              <text>{{item.value}}</text>
+            </view>
+          </view>
+        </view>
+
+        <view class="editor-panel editor-panel--stepper">
+          <view class="editor-panel__header">
+            <text class="editor-panel__title">倍数</text>
+            <text class="editor-panel__summary">最小 1 倍</text>
+          </view>
+          <view class="mult-stepper">
+            <view class="mult-stepper__btn {{editorForm.mult <= 1 ? 'mult-stepper__btn--disabled' : ''}}" bindtap="onDecreaseMult">
+              <text class="mult-stepper__btn-text">-</text>
+            </view>
+            <view class="mult-stepper__value">
+              <text class="mult-stepper__value-text">{{editorForm.mult}} 倍</text>
+            </view>
+            <view class="mult-stepper__btn mult-stepper__btn--primary" bindtap="onIncreaseMult">
+              <text class="mult-stepper__btn-text">+</text>
+            </view>
+          </view>
+        </view>
+      </scroll-view>
+
+      <view class="editor-actions">
+        <button class="btn-ghost" bindtap="closeEditor">取消</button>
+        <button class="btn-primary" bindtap="saveEditor">保存校对</button>
+      </view>
+    </view>
+  </view>
+</view>

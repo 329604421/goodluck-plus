@@ -1,0 +1,132 @@
+/* pages/init/init.wxss - 初始化配置页
+   设计稿：Content padding 48rpx 左右 / 16rpx 上 / 48rpx 下，组间距 40rpx
+   2026-10-16：裸色值改为语义令牌，深色随系统自动生效。 */
+
+.init {
+  padding-top: 8rpx;
+  padding-bottom: 48rpx;
+}
+
+.init__header {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 40rpx;
+}
+
+.init__subtitle {
+  font-size: 28rpx;
+  color: var(--text-secondary);
+  line-height: 40rpx;
+}
+
+/* 表单组 */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+  margin-bottom: 40rpx;
+}
+
+/* 标签行（彩票种类 + 可多选 tag） */
+.form-label-row {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.tag-multi {
+  display: flex;
+  align-items: center;
+  height: 44rpx;
+  padding: 0 18rpx;
+  background: var(--attention-bg);
+  border-radius: 999rpx;
+}
+
+.tag-multi__text {
+  font-size: 22rpx;
+  font-weight: 500;
+  line-height: 1;
+  color: var(--attention-text);
+}
+
+/* 多选/单选胶囊行 */
+.pills {
+  display: flex;
+  gap: 8rpx;
+  min-height: 88rpx;
+  background: var(--surface-sunken);
+  border-radius: 44rpx;
+  padding: 8rpx;
+  box-sizing: border-box;
+}
+
+.pills .pill {
+  flex: 1;
+  height: 72rpx;
+  min-height: 72rpx;
+  border: none;
+  border-radius: 36rpx;
+  background: transparent;
+  font-size: 26rpx;
+  font-weight: 500;
+  color: var(--text-secondary);
+  box-sizing: border-box;
+}
+
+.pills .pill--active {
+  background: var(--selection-bg);
+  color: var(--selection-text);
+  font-weight: 600;
+}
+
+/* 按压反馈（2026-10-16）：原位替换「hover-class="none"」。
+   选择器带 .pills 前缀是为了压过 .pills .pill / .pills .pill--active 的优先级，
+   否则按压底色根本不会生效。选中项按压时保持选中底色，只做轻微反馈。 */
+.pills .pill--press {
+  background: var(--surface-pressed);
+}
+
+.pills .pill--active.pill--press {
+  background: var(--selection-bg);
+}
+
+.init-pill {
+  padding: 0;
+  line-height: 72rpx;
+}
+
+.init-pill::after {
+  border: none;
+}
+
+/* picker 值（设计稿：14px Medium） */
+.field__value {
+  font-size: 28rpx;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.field--between {
+  justify-content: space-between;
+}
+
+/* 弹性占位 */
+.init__spacer {
+  flex: 1;
+  min-height: 32rpx;
+}
+
+.init__cta {
+  margin-top: 8rpx;
+  font-weight: 600;
+}
+
+.init__helper {
+  display: block;
+  margin-top: 20rpx;
+  font-size: 22rpx;
+  line-height: 34rpx;
+  text-align: center;
+  color: var(--text-muted);
+}

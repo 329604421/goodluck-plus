@@ -1,0 +1,681 @@
+/* pages/home/home.wxss - 首页兑奖
+   设计稿：Content padding 40rpx 左右 / 16rpx 上 / 32rpx 下，组间距 28rpx
+
+   2026-10-16 深色模式：全部裸色值改为语义令牌（var(--xxx)），
+   深色下由 app.wxss 的 prefers-color-scheme 覆盖自动生效，本文件不再出现色值。 */
+
+.home-scroll {
+  flex: 1;
+}
+
+.home {
+  padding-top: 8rpx;
+  padding-bottom: 32rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 28rpx;
+}
+
+/* 副标题（内容区顶部，同 init 页样式） */
+.home__greet-sub {
+  font-size: 28rpx;
+  color: var(--text-secondary);
+  line-height: 40rpx;
+}
+
+/* 导航栏标题 + 配置入口（2026-10-16 v2）：
+   入口从「白胶囊 + 橙字 + 箭头」改为**圆形齿轮图标按钮**。
+   原因：48rpx 高的胶囊里塞三个元素（文字/箭头/内边距）视觉太碎；
+   橙字（accent-strong）在导航区抢眼，与「杏橙仅在关键节点出现」的品牌原则相悖。
+   现在 64rpx 圆钮 + 17px 齿轮（tone=secondary），与 40rpx 标题同一视觉重量。
+   位置刻意内联在标题右侧、**不放导航栏最右** —— 那里是微信右上角胶囊的地盘，放过去必然重叠。 */
+.home__nav-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 20rpx;
+  min-width: 0;
+}
+
+.home__nav-name {
+  font-size: 40rpx;
+  font-weight: 700;
+  color: var(--text-primary);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.home__nav-config {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 50%;
+  background: var(--surface-raised);
+  box-shadow: var(--elev-1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+/* 首页状态卡（V2）：与下方卡片同一套语言 —— 暖白纸 + 浮起投影，不再用描边 */
+.hero-card {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+  border-radius: 48rpx;
+  padding: 36rpx 40rpx;
+  box-sizing: border-box;
+  box-shadow: var(--elev-1);
+}
+
+/* 待兑奖：全站唯一使用暖色块底的卡片 —— 「需要处理的事情」必须最显眼 */
+.hero-card--redeem {
+  background: var(--attention-bg);
+}
+
+/* 待开奖 / 未录入：都用中性卡底，语义交给徽章与文案，不靠整块底色区分 */
+.hero-card--draw {
+  background: var(--surface-card);
+}
+
+.hero-card--empty {
+  background: var(--surface-card);
+}
+
+.hero-card__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.hero-card__badge {
+  display: flex;
+  align-items: center;
+  height: 56rpx;
+  padding: 0 24rpx;
+  border-radius: 999rpx;
+  font-size: 24rpx;
+  font-weight: 700;
+}
+
+.hero-card__badge--redeem {
+  background: var(--attention-badge-bg);
+  color: var(--attention-badge-text);
+}
+
+.hero-card__badge--draw {
+  background: var(--strong-badge-bg);
+  color: var(--strong-badge-text);
+}
+
+.hero-card__badge--empty {
+  background: var(--neutral-badge-bg);
+  color: var(--neutral-badge-text);
+}
+
+.hero-card__title {
+  font-size: 28rpx;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.hero-card__amount-label {
+  font-size: 24rpx;
+  color: var(--text-muted);
+}
+
+.hero-card__amount {
+  font-size: 72rpx;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: 1rpx;
+}
+
+/* 待开奖卡「开奖时间：日期 时刻」主文案（2026-08-20 新增，替代停售倒计时） */
+.hero-card__draw-time {
+  font-size: 32rpx;
+  line-height: 44rpx;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.hero-card__headline {
+  font-size: 40rpx;
+  line-height: 56rpx;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.hero-card__desc {
+  font-size: 26rpx;
+  line-height: 40rpx;
+  color: var(--text-secondary);
+}
+
+.hero-card__tip {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.hero-card__tip-text {
+  font-size: 24rpx;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.hero-card__action {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6rpx;
+  height: 104rpx;
+  background: var(--action-bg);
+  border-radius: 999rpx;
+  padding: 16rpx 32rpx;
+  box-sizing: border-box;
+}
+
+.hero-card__action--single {
+  height: 88rpx;
+}
+
+.hero-card__action-main {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: var(--action-text);
+}
+
+.hero-card__action-sub {
+  font-size: 22rpx;
+  color: var(--action-text-sub);
+}
+
+/* 本期开奖信息卡 */
+.status-card {
+  display: flex;
+  flex-direction: column;
+  gap: 28rpx;
+  padding: 32rpx 36rpx;
+}
+
+.status-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 56rpx;
+}
+
+.status-card__label {
+  font-size: 26rpx;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+/* 彩种切换器（segmented） */
+.lottery-switcher {
+  display: flex;
+  gap: 8rpx;
+  background: var(--surface-sunken);
+  border-radius: 32rpx;
+  padding: 6rpx;
+}
+
+.lottery-switcher__item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 52rpx;
+  padding: 0 24rpx;
+  border-radius: 26rpx;
+  font-size: 24rpx;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.lottery-switcher__item--active {
+  background: var(--selection-bg);
+  color: var(--selection-text);
+  font-weight: 600;
+}
+
+/* 期号行 + 已购买 */
+.status-card__period-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.status-card__period {
+  font-size: 44rpx;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.badge--purchased {
+  background: var(--success-bg);
+  color: var(--success-text);
+}
+
+/* 奖池 */
+.status-card__pool {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.status-card__pool-label {
+  font-size: 24rpx;
+  color: var(--text-muted);
+}
+
+.status-card__pool-amount {
+  font-size: 56rpx;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* 倒计时 */
+.status-card__cd {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.status-card__cd-left {
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+}
+
+.status-card__cd-label {
+  font-size: 24rpx;
+  color: var(--text-muted);
+}
+
+.status-card__cd-time {
+  font-size: 40rpx;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* 次按钮「查看」（2026-10-16）：
+   原为墨黑实底胶囊。深色下墨黑实底贴在深色卡上等于消失，且它与主操作同色会抢层级。
+   改为 raised 底 + control 边界的次按钮规格（与 .btn-ghost 同一语言），
+   两种主题下都成立。尺寸 120×64rpx 与字号保持不变。 */
+.status-card__cd-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 64rpx;
+  width: 120rpx;
+  background: var(--surface-raised);
+  border-radius: 999rpx;
+  border: 2rpx solid var(--border-control);
+  font-size: 24rpx;
+  font-weight: 600;
+  color: var(--text-primary);
+  box-sizing: border-box;
+}
+
+/* 购彩统计卡 */
+.stats-card {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+  padding: 28rpx 36rpx;
+}
+
+.stats-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 48rpx;
+}
+
+.stats-card__hint {
+  font-size: 22rpx;
+  color: var(--text-muted);
+}
+
+.stats-card__row {
+  display: flex;
+  gap: 24rpx;
+}
+
+/* 内层小卡（2026-10-16）：去掉重复描边，改用轻微底色差 ——
+   外层卡片已经负责轮廓，内层再描边在深色下会碎成一片格子。 */
+.stat-block {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+  border-radius: 28rpx;
+  padding: 28rpx;
+  box-sizing: border-box;
+  background: var(--surface-sunken);
+  border: none;
+}
+
+.stat-block__label {
+  font-size: 22rpx;
+  color: var(--text-muted);
+}
+
+.stat-block__value {
+  font-size: 48rpx;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* 中奖总额：状态色（浅色 #067A4E on #E5F6EC 4.8:1；原 #00B473 仅 2.41:1） */
+.stat-block__value--green {
+  color: var(--success-text);
+}
+
+.home-rokid-entry {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24rpx;
+  padding: 28rpx 32rpx;
+}
+
+.home-rokid-entry__brand {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 24rpx;
+  min-width: 0;
+}
+
+/* 品牌位图承载面（保留小面积有界浅底，不做整图反色） */
+.home-rokid-entry__logo-wrap {
+  width: 96rpx;
+  height: 96rpx;
+  border-radius: 28rpx;
+  background: var(--surface-sunken);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.home-rokid-entry__logo {
+  width: 60rpx;
+  height: 60rpx;
+  border-radius: 14rpx; /* 圆角微调：28→14rpx，2026-08-21 */
+}
+
+.home-rokid-entry__text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+}
+
+.home-rokid-entry__eyebrow {
+  font-size: 20rpx;
+  font-weight: 600;
+  line-height: 28rpx;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1rpx;
+}
+
+.home-rokid-entry__title {
+  font-size: 30rpx;
+  font-weight: 700;
+  line-height: 42rpx;
+  color: var(--text-primary);
+}
+
+.home-rokid-entry__desc {
+  font-size: 22rpx;
+  line-height: 32rpx;
+  color: var(--text-secondary);
+}
+
+.home-rokid-entry__cta {
+  width: 120rpx;
+  height: 64rpx;
+  border-radius: 999rpx;
+  background: var(--surface-raised);
+  border: 2rpx solid var(--border-control);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 24rpx;
+  font-weight: 600;
+  color: var(--text-primary);
+  box-sizing: border-box;
+}
+
+/* ==================== 抽屉 ==================== */
+
+.home-drawer__mask {
+  position: fixed;
+  inset: 0;
+  background: var(--overlay);
+  display: flex;
+  align-items: flex-end;
+  z-index: 30;
+}
+
+/* 短详情档：高度随内容，但给一个上限，避免内容多时顶出屏幕 */
+.home-drawer {
+  width: 100%;
+  max-height: calc(100vh - 140rpx);
+  background: var(--surface-raised);
+  border-radius: 40rpx 40rpx 0 0;
+  padding: 20rpx 32rpx calc(env(safe-area-inset-bottom) + 32rpx);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 28rpx;
+}
+
+.home-drawer__handle {
+  width: 72rpx;
+  height: 8rpx;
+  border-radius: 999rpx;
+  background: var(--sheet-handle);
+  align-self: center;
+}
+
+.home-drawer__content {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.home-drawer__title {
+  font-size: 34rpx;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.home-drawer__desc {
+  font-size: 26rpx;
+  line-height: 40rpx;
+  color: var(--text-secondary);
+}
+
+.home-drawer__info {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+  background: var(--surface-sunken);
+  border-radius: 28rpx;
+  padding: 24rpx 28rpx;
+}
+
+.home-drawer__info-main {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.home-drawer__info-sub {
+  font-size: 24rpx;
+  color: var(--text-muted);
+}
+
+.home-drawer__placeholder {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.home-drawer__image-slot {
+  height: 240rpx;
+  border-radius: 28rpx;
+  background: var(--surface-sunken);
+  border: 2rpx dashed var(--border-control);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.home-drawer__image-slot-text {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.home-drawer__placeholder-text {
+  font-size: 24rpx;
+  line-height: 38rpx;
+  color: var(--text-secondary);
+}
+
+/* Rokid 口令抽屉（2026-08-25 改造说明 §4.3） */
+.home-drawer__rokid {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.rokid-step {
+  font-size: 24rpx;
+  color: var(--text-secondary);
+}
+
+.rokid-code-input {
+  height: 96rpx;
+  border-radius: 24rpx;
+  background: var(--surface-sunken);
+  border: 2rpx solid var(--border-control);
+  padding: 0 28rpx;
+  font-size: 40rpx;
+  font-weight: 700;
+  letter-spacing: 12rpx;
+  color: var(--text-primary);
+  text-align: center;
+}
+
+.rokid-passcode {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16rpx;
+  padding: 20rpx 0;
+}
+
+.rokid-passcode__label {
+  font-size: 24rpx;
+  color: var(--text-muted);
+}
+
+.rokid-passcode__value {
+  font-size: 32rpx;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: 2rpx;
+}
+
+.rokid-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+  padding: 20rpx 24rpx;
+  border-radius: 24rpx;
+  background: var(--surface-sunken);
+}
+
+.rokid-steps__title {
+  font-size: 24rpx;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 8rpx;
+}
+
+.rokid-steps__item {
+  font-size: 24rpx;
+  line-height: 36rpx;
+  color: var(--text-secondary);
+}
+
+.rokid-hint {
+  font-size: 22rpx;
+  line-height: 34rpx;
+  color: var(--text-muted);
+}
+
+.home-drawer__actions {
+  display: flex;
+  gap: 24rpx;
+}
+
+.home-drawer__action {
+  flex: 1;
+}
+
+/* 开奖详情抽屉内容 */
+.draw-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.draw-detail__header {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.draw-detail__title {
+  font-size: 32rpx;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.draw-detail__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.draw-detail__label {
+  font-size: 26rpx;
+  color: var(--text-muted);
+}
+
+.draw-detail__value {
+  font-size: 26rpx;
+  color: var(--text-primary);
+}
+
+.draw-detail__value--hl {
+  font-weight: 700;
+  color: var(--danger-text);
+}
+
+/* 底部占位 */
+.home__bottom-space {
+  height: 32rpx;
+}

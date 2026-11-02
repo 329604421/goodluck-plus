@@ -1,0 +1,169 @@
+<!-- pages/recommend/recommend.wxml - 号码推荐（设计稿 Screen4） -->
+<view class="page">
+  <view class="status-bar" style="height: {{statusBarHeight}}px;"></view>
+
+  <!-- 统一导航栏（与胶囊对齐） -->
+  <view class="nav-bar" style="height: {{navBarHeight}}px;">
+    <text class="nav-bar__title">号码推荐</text>
+  </view>
+
+  <view class="page-content recommend">
+    <view class="recommend-controls">
+      <view class="recommend-controls__section">
+        <view class="recommend-controls__head">
+          <text class="recommend-controls__label">推演模式</text>
+          <text class="recommend-controls__hint">选择一套趣味推演方式</text>
+        </view>
+        <view class="recommend-switch">
+          <view
+            class="recommend-switch__item {{system === 'astrology' ? 'recommend-switch__item--active' : ''}}"
+            data-system="astrology"
+            bindtap="switchSystem"
+            hover-class="recommend-switch__item--press"
+            hover-stay-time="80"
+          >星座占星</view>
+          <view
+            class="recommend-switch__item {{system === 'iching' ? 'recommend-switch__item--active' : ''}}"
+            data-system="iching"
+            bindtap="switchSystem"
+            hover-class="recommend-switch__item--press"
+            hover-stay-time="80"
+          >五行推命</view>
+        </view>
+      </view>
+
+      <view class="recommend-controls__section recommend-controls__section--compact">
+        <view class="recommend-controls__head">
+          <text class="recommend-controls__label">彩票种类</text>
+          <text class="recommend-controls__hint">默认按你的配置优先展示</text>
+        </view>
+        <view class="recommend-switch recommend-switch--lottery">
+          <view
+            class="recommend-switch__item {{currentLottery === 'ssq' ? 'recommend-switch__item--active' : ''}}"
+            data-type="ssq"
+            bindtap="switchLottery"
+            hover-class="recommend-switch__item--press"
+            hover-stay-time="80"
+          >双色球</view>
+          <view
+            class="recommend-switch__item {{currentLottery === 'dlt' ? 'recommend-switch__item--active' : ''}}"
+            data-type="dlt"
+            bindtap="switchLottery"
+            hover-class="recommend-switch__item--press"
+            hover-stay-time="80"
+          >大乐透</view>
+        </view>
+      </view>
+
+      <!-- 用户信息 -->
+      <view class="recommend-profile">
+        <view class="recommend-profile__item">
+          <text class="recommend-profile__label">姓名</text>
+          <text class="recommend-profile__value">{{userProfile.name}}</text>
+        </view>
+        <view class="recommend-profile__item">
+          <text class="recommend-profile__label">性别</text>
+          <text class="recommend-profile__value">{{userProfile.genderText}}</text>
+        </view>
+        <view class="recommend-profile__item">
+          <text class="recommend-profile__label">生日</text>
+          <text class="recommend-profile__value">{{userProfile.birth}}</text>
+        </view>
+        <view class="recommend-profile__item">
+          <text class="recommend-profile__label">今日</text>
+          <text class="recommend-profile__value">{{userProfile.todayDate}}</text>
+        </view>
+      </view>
+    </view>
+
+    <view wx:if="{{errorText}}" class="recommend__notice">
+      <text class="recommend__notice-text">{{errorText}}</text>
+      <text class="recommend__notice-action" bindtap="onRetry" hover-class="press-surface" hover-stay-time="80">重试</text>
+    </view>
+
+    <!-- 结果可信度提示（2026-10-16）：当前组合上次更新失败时明确标注，
+         不再把旧结果/初始化示例当作本次新生成的结果展示 -->
+    <view wx:if="{{resultNotice}}" class="recommend__notice">
+      <text class="recommend__notice-text">{{resultNotice}}</text>
+      <text class="recommend__notice-action" bindtap="onRegenerate" hover-class="press-surface" hover-stay-time="80">重新生成</text>
+    </view>
+
+    <!-- 号码卡 -->
+    <view wx:if="{{loading && !loadedOnce}}" class="card state-card">
+      <text class="state-card__title">正在为你推演号码</text>
+      <text class="state-card__desc">会结合当前彩种和推演体系生成最新的趣味号码组合。</text>
+    </view>
+
+    <view wx:elif="{{loadedOnce}}" class="numbers-card">
+      <view class="numbers-card__head">
+        <view class="numbers-card__head-left">
+          <text class="numbers-card__head-label">号码推荐 · {{rec.systemName}}</text>
+        </view>
+        <text class="numbers-card__head-date">{{rec.date}}</text>
+      </view>
+
+      <!-- 红球区 -->
+      <view class="ball-section">
+        <text class="ball-section__label">{{rec.redLabel}}</text>
+        <view class="ball-row">
+          <view class="ball ball--red" wx:for="{{rec.redBalls}}" wx:key="*this">{{item}}</view>
+        </view>
+      </view>
+
+      <!-- 蓝球区（统一 44px 圆球） -->
+      <view class="ball-section">
+        <text class="ball-section__label">{{rec.blueLabel}}</text>
+        <view class="ball-row">
+          <view class="ball ball--blue" wx:for="{{rec.blueBalls}}" wx:key="*this">{{item}}</view>
+        </view>
+      </view>
+
+      <!-- 推演摘要（整块可点；2026-10-16「查看完整内容」简化为「查看」） -->
+      <view class="numbers-card__analysis" bindtap="openAnalysisDrawer" hover-class="press-surface" hover-stay-time="80">
+        <view class="numbers-card__analysis-head">
+          <text class="numbers-card__analysis-title">推荐分析</text>
+          <text class="numbers-card__analysis-action">查看</text>
+        </view>
+        <text class="numbers-card__summary">{{analysisText}}</text>
+      </view>
+    </view>
+
+    <view wx:else class="card state-card">
+      <text class="state-card__title">还没有生成推荐结果</text>
+      <text class="state-card__desc">点击下方按钮即可按当前条件生成一组趣味号码。</text>
+      <button class="btn-primary state-card__action" bindtap="onRetry">立即生成</button>
+    </view>
+
+    <!-- 免责声明 -->
+    <text class="recommend__disclaimer">{{rec.disclaimer}}</text>
+
+    <!-- 重新生成（今日首次进入演算中隐藏，避免重复点击；演算完成后显示） -->
+    <button wx:if="{{loadedOnce}}" class="btn-primary recommend__regen" bindtap="onRegenerate" loading="{{refreshing}}" disabled="{{refreshing}}">
+      <icon type="refresh" size="{{18}}" tone="on-action" />
+      <text class="recommend__regen-text">{{refreshing ? '生成中...' : '重新生成'}}</text>
+    </button>
+
+    <view class="page-bottom-safe"></view>
+  </view>
+
+  <view wx:if="{{analysisDrawerVisible}}" class="recommend-drawer__mask" catchtap="closeAnalysisDrawer">
+    <view class="recommend-drawer" catchtap="noop">
+      <view class="recommend-drawer__handle"></view>
+
+      <view class="recommend-drawer__header">
+        <text class="recommend-drawer__title">推荐分析描述</text>
+      </view>
+
+      <scroll-view class="recommend-drawer__body" scroll-y enhanced show-scrollbar="{{false}}">
+        <view class="recommend-drawer__text">
+          <text wx:for="{{analysisParagraphs}}" wx:key="index" class="recommend-drawer__para">{{item}}</text>
+        </view>
+      </scroll-view>
+
+      <view class="recommend-drawer__actions">
+        <button class="btn-ghost recommend-drawer__action" bindtap="closeAnalysisDrawer">关闭</button>
+        <button class="btn-primary recommend-drawer__action" bindtap="onCopyAnalysis">复制</button>
+      </view>
+    </view>
+  </view>
+</view>

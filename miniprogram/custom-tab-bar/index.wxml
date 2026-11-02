@@ -1,0 +1,19 @@
+<view class="tabbar" hidden="{{hidden}}">
+  <!-- 毛玻璃浮层：默认开启；「附近」页由页面置 backdrop=false 关闭（地图底图冲突，需求 §3.2.3） -->
+  <view class="tabbar__backdrop" hidden="{{!backdrop}}"></view>
+  <view class="tabbar__pill">
+    <view
+      wx:for="{{list}}"
+      wx:key="pagePath"
+      class="tabbar__item {{selected === index ? 'tabbar__item--active' : ''}}"
+      data-index="{{index}}"
+      data-path="{{item.pagePath}}"
+      bindtap="switchTab"
+    >
+      <!-- 图标与文字必须**同时**随选中态与主题变化（2026-10-16）：
+           tone 由 icon 组件按当前主题解析，不再写死 #FFFFFF / #8E91A0 -->
+      <icon type="{{item.icon}}" size="{{22}}" tone="{{selected === index ? 'selection' : 'muted'}}" />
+      <text class="tabbar__label">{{item.text}}</text>
+    </view>
+  </view>
+</view>

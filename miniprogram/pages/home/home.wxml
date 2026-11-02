@@ -1,0 +1,232 @@
+<!-- pages/home/home.wxml - 首页兑奖（设计稿 Screen2） -->
+<view class="page">
+  <view class="status-bar" style="height: {{statusBarHeight}}px;"></view>
+
+  <!-- 统一导航栏（标题与其他页同一水平线）
+       2026-10-16 v2：原「配置 ›」白胶囊（22rpx 橙字 + 箭头挤在 48rpx 高的小圆角里）
+       视觉太碎、且橙色在导航区过度抢眼（品牌原则是「杏橙仅在关键节点出现」）。
+       改为**圆形图标按钮 + 齿轮**：与标题同一视觉重量、无文字更安静。
+       · 位置仍内联在标题右侧，**不放导航栏最右** —— 那是微信右上胶囊的地盘。
+       · 点击行为完全保留：点标题或点按钮都能进配置；按钮用 catchtap 阻止冒泡，
+         避免一次点击触发两次 navigateTo。 -->
+  <view class="nav-bar" style="height: {{navBarHeight}}px;">
+    <view class="home__nav-title" bindtap="onGoConfig">
+      <text class="home__nav-name">您好，{{userInfo.name}}</text>
+      <view class="home__nav-config" catchtap="onGoConfig" hover-class="press-surface" hover-stay-time="80">
+        <icon type="settingTwo" size="{{17}}" tone="secondary" />
+      </view>
+    </view>
+  </view>
+
+  <scroll-view class="home-scroll" style="height: {{contentHeight}};" scroll-y enhanced show-scrollbar="{{false}}">
+    <view class="page-content home">
+      <!-- 副标题（内容区顶部，同 init 页样式） -->
+      <text class="home__greet-sub">{{loading ? '正在同步你的兑奖提醒与开奖信息...' : homeNoticeText}}</text>
+
+      <view wx:if="{{errorText}}" class="card state-card">
+        <text class="state-card__title">首页暂时没刷出来</text>
+        <text class="state-card__desc">{{errorText}}</text>
+        <button class="btn-primary state-card__action" bindtap="onRetry">重新加载</button>
+      </view>
+
+      <!-- 首页状态卡：待兑奖 > 待开奖 > 去录入彩票 -->
+      <view wx:if="{{!errorText && heroCard}}" class="hero-card hero-card--{{heroCard.kind}}">
+        <view class="hero-card__top">
+          <view class="hero-card__badge hero-card__badge--{{heroCard.kind}}">
+            <text>{{heroCard.badgeText}}</text>
+          </view>
+          <text class="hero-card__title">{{heroCard.title}}</text>
+        </view>
+
+        <block wx:if="{{heroCard.kind === 'empty'}}">
+          <text class="hero-card__headline">{{heroCard.headline}}</text>
+          <text class="hero-card__desc">{{heroCard.desc}}</text>
+        </block>
+        <block wx:elif="{{heroCard.kind === 'draw'}}">
+          <!-- 待开奖：主文案「开奖时间：日期 时刻」，不显示停售倒计时（2026-08-20 调整） -->
+          <text class="hero-card__draw-time">{{heroCard.drawTimeText}}</text>
+          <view class="hero-card__tip">
+            <text class="hero-card__tip-text">{{heroCard.tipText}}</text>
+          </view>
+        </block>
+        <block wx:else>
+          <text class="hero-card__amount-label">{{heroCard.amountLabel}}</text>
+          <text class="hero-card__amount">{{heroCard.amount}}</text>
+          <view class="hero-card__tip">
+            <text class="hero-card__tip-text">{{heroCard.tipText}}</text>
+          </view>
+        </block>
+
+        <view class="hero-card__action {{heroCard.kind === 'empty' ? 'hero-card__action--single' : ''}}" bindtap="onHeroAction" hover-class="press-action" hover-stay-time="80">
+          <text class="hero-card__action-main">{{heroCard.primaryText}}</text>
+          <text wx:if="{{heroCard.secondaryText}}" class="hero-card__action-sub">{{heroCard.secondaryText}}</text>
+        </view>
+      </view>
+
+      <!-- 下一期奖池信息 -->
+      <view wx:if="{{!errorText}}" class="card status-card">
+        <view class="status-card__header">
+          <text class="status-card__label">下一期奖池信息</text>
+          <!-- 彩种切换器（右上角） -->
+          <view class="lottery-switcher">
+            <view
+              class="lottery-switcher__item {{currentType === 'ssq' ? 'lottery-switcher__item--active' : ''}}"
+              data-type="ssq"
+              bindtap="switchLottery"
+            >双色球</view>
+            <view
+              class="lottery-switcher__item {{currentType === 'dlt' ? 'lottery-switcher__item--active' : ''}}"
+              data-type="dlt"
+              bindtap="switchLottery"
+            >大乐透</view>
+          </view>
+        </view>
+
+        <!-- 期号 + 已购买徽章 -->
+        <view class="status-card__period-row">
+          <text class="status-card__period">{{status.period}}</text>
+          <view wx:if="{{status.purchased}}" class="badge badge--purchased">
+            <text>已购买</text>
+          </view>
+        </view>
+
+        <!-- 奖池 -->
+        <view class="status-card__pool">
+          <text class="status-card__pool-label">奖池金额</text>
+          <text class="status-card__pool-amount">{{status.poolAmount}}</text>
+        </view>
+
+        <!-- 停售倒计时 + 查看详情 -->
+        <view class="status-card__cd">
+          <view class="status-card__cd-left">
+            <text class="status-card__cd-label">距本期停售</text>
+            <text class="status-card__cd-time">{{status.countdown}}</text>
+          </view>
+          <view class="status-card__cd-btn" bindtap="onViewDetail" hover-class="press-surface" hover-stay-time="80">查看</view>
+        </view>
+      </view>
+
+      <!-- 购彩统计 -->
+      <view wx:if="{{!errorText}}" class="card stats-card">
+        <view class="stats-card__header">
+          <text class="section-title">购彩统计</text>
+          <text class="stats-card__hint">{{stats.monthLabel}}</text>
+        </view>
+
+        <view class="stats-card__row">
+          <view class="stat-block">
+            <text class="stat-block__label">已购期数</text>
+            <text class="stat-block__value">{{stats.purchasedPeriods}}</text>
+          </view>
+          <view class="stat-block">
+            <text class="stat-block__label">总花费</text>
+            <text class="stat-block__value">{{stats.totalSpentText}}</text>
+          </view>
+          <view class="stat-block">
+            <text class="stat-block__label">中奖总额</text>
+            <text class="stat-block__value stat-block__value--green">{{stats.totalWonText}}</text>
+          </view>
+        </view>
+      </view>
+
+      <view wx:if="{{!errorText}}" class="card home-rokid-entry" bindtap="onOpenRokidLogin" hover-class="press-surface" hover-stay-time="80">
+        <view class="home-rokid-entry__brand">
+          <view class="home-rokid-entry__logo-wrap">
+            <image class="home-rokid-entry__logo" src="../../assets/rokid-logo.png" mode="aspectFit"></image>
+          </view>
+          <view class="home-rokid-entry__text">
+            <text class="home-rokid-entry__eyebrow">Rokid</text>
+            <text class="home-rokid-entry__title">智能体登录</text>
+            <text class="home-rokid-entry__desc">查看眼镜端登录方式与绑定说明</text>
+          </view>
+        </view>
+        <view class="home-rokid-entry__cta">查看</view>
+      </view>
+
+      <!-- 底部占位（给 tabBar 留空间） -->
+      <view class="page-bottom-safe"></view>
+    </view>
+  </scroll-view>
+
+  <view wx:if="{{drawerVisible}}" class="home-drawer__mask" catchtap="closeDrawer">
+    <view class="home-drawer" catchtap="noop">
+      <view class="home-drawer__handle"></view>
+      <view class="home-drawer__content">
+        <text class="home-drawer__title">{{drawerPayload.title}}</text>
+        <text class="home-drawer__desc">{{drawerPayload.desc}}</text>
+
+        <view wx:if="{{drawerMode === 'redeem'}}" class="home-drawer__info">
+          <text class="home-drawer__info-main">{{drawerPayload.amount}}</text>
+          <text class="home-drawer__info-sub">{{drawerPayload.subtext}}</text>
+        </view>
+
+        <!-- Rokid 口令抽屉（2026-08-25 改造说明 §4.2） -->
+        <view wx:if="{{drawerMode === 'rokid'}}" class="home-drawer__rokid">
+          <view class="rokid-step">第一步：填写六位验证码（自定义，仅数字）</view>
+          <input
+            class="rokid-code-input"
+            type="number"
+            maxlength="6"
+            value="{{rokidCode}}"
+            placeholder="6 位数字验证码"
+            bindinput="onRokidCodeInput"
+          />
+          <view class="rokid-passcode">
+            <text class="rokid-passcode__label">口令</text>
+            <text class="rokid-passcode__value">{{rokidUserId ? 'R' + rokidUserId + '-' + rokidCode : '--'}}</text>
+          </view>
+          <view class="rokid-steps">
+            <view class="rokid-steps__title">使用步骤</view>
+            <text class="rokid-steps__item">1. 点击底部「复制口令」</text>
+            <text class="rokid-steps__item">2. 打开 Rokid App → AI快捷指令</text>
+            <text class="rokid-steps__item">3. 新建/编辑自定义指令，粘贴口令</text>
+            <text class="rokid-steps__item">4. 唤起指令即可完成眼镜端绑定</text>
+          </view>
+          <text class="rokid-hint">口令长期有效；如更换验证码，请将新口令重新粘贴到 Rokid 快捷指令</text>
+        </view>
+      </view>
+
+      <view class="home-drawer__actions">
+        <button class="btn-ghost home-drawer__action" bindtap="closeDrawer">取消</button>
+        <button
+          class="btn-primary home-drawer__action"
+          disabled="{{drawerMode === 'rokid' && rokidCode.length < 6}}"
+          bindtap="onDrawerConfirm"
+        >{{drawerMode === 'rokid' ? '复制口令' : '完成'}}</button>
+      </view>
+    </view>
+  </view>
+
+  <!-- 开奖详情半屏抽屉（"查看"按钮，专注开奖信息） -->
+  <view wx:if="{{drawDetailVisible}}" class="home-drawer__mask" catchtap="closeDrawDetail">
+    <view class="home-drawer" catchtap="noop">
+      <view class="home-drawer__handle"></view>
+      <view class="draw-detail">
+        <view class="draw-detail__header">
+          <text class="draw-detail__title">{{status.name}} · {{status.period}}</text>
+        </view>
+
+        <view class="draw-detail__row">
+          <text class="draw-detail__label">开奖时间</text>
+          <text class="draw-detail__value">{{status.drawDate}} {{status.drawTime}} 开奖</text>
+        </view>
+        <view class="draw-detail__row">
+          <text class="draw-detail__label">停售时间</text>
+          <text class="draw-detail__value">开奖日 {{status.saleEndTime}} 截止</text>
+        </view>
+        <view class="draw-detail__row">
+          <text class="draw-detail__label">奖池金额</text>
+          <text class="draw-detail__value">{{status.poolAmount}}</text>
+        </view>
+        <view class="draw-detail__row">
+          <text class="draw-detail__label">停售倒计时</text>
+          <text class="draw-detail__value draw-detail__value--hl">{{status.countdown}}</text>
+        </view>
+      </view>
+
+      <view class="home-drawer__actions">
+        <button class="btn-primary home-drawer__action" bindtap="closeDrawDetail">知道了</button>
+      </view>
+    </view>
+  </view>
+</view>

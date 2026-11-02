@@ -1,0 +1,596 @@
+/* pages/ledger/ledger.wxss - 台账热力图页
+   设计稿：Content padding 40rpx 左右 / 8rpx 上 / 32rpx 下，组间距 28rpx
+
+   2026-10-16 深色模式：
+   - 全部裸色值改为语义令牌。
+   - 热力图色阶 L0–L4 收敛为 --heat-0 ~ --heat-4 唯一一套，
+     浅色「由淡到深」、深色「越亮金额越高」，金额阈值逻辑不变。
+   - 选中格改用「外描边 + 间隔」而不是半透明阴影（深色层级不靠阴影）。 */
+
+.ledger {
+  padding-top: 8rpx;
+  padding-bottom: 32rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 28rpx;
+}
+
+/* 导航栏（设计稿：仅标题；高度由 JS 按胶囊对齐注入） */
+.nav-bar {
+  display: flex;
+  align-items: center;
+  padding-left: 40rpx;
+  padding-right: 40rpx;
+  box-sizing: border-box;
+}
+
+.nav-bar__title {
+  font-size: 40rpx;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* 购彩日历卡 */
+.heatmap-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28rpx;
+  padding: 32rpx 36rpx;
+}
+
+.heatmap-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  height: 48rpx;
+}
+
+.heatmap-card__title {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* 图例：与格子共享同一套令牌，避免出现第二套色板 */
+.heatmap-legend {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+}
+
+.heatmap-legend__text {
+  font-size: 22rpx;
+  color: var(--text-muted);
+}
+
+.heatmap-legend__swatch {
+  width: 24rpx;
+  height: 24rpx;
+  border-radius: 6rpx;
+}
+
+.heatmap-legend__swatch--l0 { background: var(--heat-0); }
+.heatmap-legend__swatch--l1 { background: var(--heat-1); }
+.heatmap-legend__swatch--l2 { background: var(--heat-2); }
+.heatmap-legend__swatch--l3 { background: var(--heat-3); }
+.heatmap-legend__swatch--l4 { background: var(--heat-4); }
+
+/* 热力图主体：顶部对齐，行标签通过 margin-top 与网格同步下移（给月份标签让位） */
+.heatmap-body {
+  display: flex;
+  align-items: flex-start;
+  gap: 12rpx;
+}
+
+/* 行标签（开奖日）：统一使用柔和灰阶，避免视觉过于突兀 */
+.heatmap-days {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 268rpx;
+  padding: 0 4rpx;
+}
+
+.heatmap-day {
+  font-size: 20rpx;
+  font-weight: 600;
+  line-height: 44rpx;
+}
+
+.heatmap-day--dlt {
+  color: var(--text-muted);
+}
+
+.heatmap-day--ssq {
+  color: var(--text-secondary);
+}
+
+/* 网格包裹层：相对定位，padding-bottom 给下方月份标签让位 */
+.heatmap-grid-wrap {
+  position: relative;
+  padding-bottom: 50rpx;
+  box-sizing: border-box;
+}
+
+/* 网格：动态列数 × 6 行，每格 38rpx(19px) 正方形，间距 8rpx（宽度由 JS 按列数计算） */
+.heatmap-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8rpx;
+}
+
+.heatmap-cell {
+  width: 38rpx;
+  height: 38rpx;
+  border-radius: 12rpx;
+}
+
+/* 选中格：内圈用卡片底色留出 1px 间隔，外圈是主题描边。
+   高密度格子必须配合下方详情区（日期/彩种/金额）判读，不能只靠绿度。 */
+.heatmap-cell--active {
+  box-shadow: 0 0 0 2rpx var(--surface-card), 0 0 0 4rpx var(--heat-ring);
+}
+
+.heatmap-cell--l0 { background: var(--heat-0); }
+.heatmap-cell--l1 { background: var(--heat-1); }
+.heatmap-cell--l2 { background: var(--heat-2); }
+.heatmap-cell--l3 { background: var(--heat-3); }
+.heatmap-cell--l4 { background: var(--heat-4); }
+
+/* 月份标签：绝对定位于网格容器底部（bottom:0/left:0），与格子列共享坐标原点 */
+.heatmap-months {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 28rpx;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.heatmap-month {
+  position: absolute;
+  top: 0;
+  font-size: 22rpx;
+  color: var(--text-muted);
+}
+
+.heatmap-info {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+  background: var(--surface-sunken);
+  border-radius: 24rpx;
+  padding: 24rpx 28rpx;
+  box-sizing: border-box;
+}
+
+.heatmap-info__title {
+  font-size: 26rpx;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.heatmap-info__desc {
+  font-size: 24rpx;
+  line-height: 36rpx;
+  color: var(--text-secondary);
+}
+
+.heatmap-info__meta {
+  font-size: 22rpx;
+  color: var(--text-muted);
+}
+
+.heatmap-info__numbers {
+  margin-top: 4rpx;
+}
+
+/* 补差同步按钮：主操作规格 */
+.heatmap-info__sync {
+  align-self: flex-start;
+  margin-top: 12rpx;
+  padding: 0 32rpx;
+  height: 60rpx;
+  line-height: 60rpx;
+  font-size: 24rpx;
+  font-weight: 600;
+  color: var(--action-text);
+  background: var(--action-bg);
+  border-radius: 999rpx;
+  border: none;
+  box-sizing: border-box;
+}
+
+.heatmap-info__sync::after {
+  border: none;
+}
+
+.heatmap-info__sync[disabled] {
+  background: var(--action-bg-disabled);
+  color: var(--action-text-disabled);
+  opacity: 1;
+}
+
+.heatmap-info__balls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+}
+
+.heatmap-info__ball {
+  width: 60rpx;
+  height: 60rpx;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24rpx;
+  font-weight: 700;
+  color: var(--ball-on-fill);
+}
+
+.heatmap-info__ball--red {
+  background: var(--ball-red-fill);
+}
+
+.heatmap-info__ball--blue {
+  background: var(--ball-blue-fill);
+}
+
+/* 购彩明细标题行（2026-10-16）：左侧标题 / 右侧当前筛选标签 */
+.ledger__section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+  height: 44rpx;
+  margin-top: 4rpx;
+}
+
+/* 筛选标签：显示「某日 · 彩种 ×」，就地清除。
+   此前只能靠到底部点「查看全部」（长列表下要滚很久才够得着）。 */
+.ledger__filter {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  height: 44rpx;
+  padding: 0 8rpx 0 16rpx;
+  border-radius: 999rpx;
+  background: var(--surface-sunken);
+  border: 2rpx solid var(--border-control);
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+.ledger__filter-text {
+  font-size: 22rpx;
+  font-weight: 600;
+  color: var(--accent-strong);
+}
+
+.ledger__filter-close {
+  width: 32rpx;
+  height: 32rpx;
+  border-radius: 50%;
+  background: var(--surface-raised);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 明细卡片 */
+.ticket {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+  background: var(--surface-card);
+  border-radius: 32rpx;
+  box-shadow: var(--elev-1);
+  padding: 24rpx 28rpx;
+  box-sizing: border-box;
+}
+
+.ticket__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* 期号 + 彩种合并单行（设计稿：14px Bold） */
+.ticket__period {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* 状态徽章（类名用英文：JS 中 statusClass 映射 中文状态 → 英文） */
+.ticket__badge--pending {
+  background: var(--neutral-badge-bg);
+  color: var(--neutral-badge-text);
+}
+
+.ticket__badge--redeemed {
+  background: var(--success-bg);
+  color: var(--success-text);
+}
+
+/* 待兑奖：列表里用**实心琥珀**徽章。
+   小尺寸文字在浅琥珀底上不够抓眼，而"有钱在等你"是列表里最需要被一眼看到的状态。 */
+.ticket__badge--awaiting {
+  background: var(--attention-badge-bg);
+  color: var(--attention-badge-text);
+}
+
+/* 未中奖是「中性」不是「错误」，不用危险色 */
+.ticket__badge--lost {
+  background: var(--neutral-badge-bg);
+  color: var(--text-muted);
+}
+
+/* 投注号码行 */
+.ticket__bets {
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+}
+
+.ticket__bet {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ticket__nums {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  flex: 1;
+  min-width: 0;
+}
+
+.ticket__ball-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8rpx;
+}
+
+.ticket__dash {
+  font-size: 26rpx;
+  color: var(--text-muted);
+}
+
+/* 未命中号码用 muted，命中只增强该号码的颜色与字重 —— 不整注高亮 */
+.ticket__ball {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.ticket__ball--red-active {
+  color: var(--ball-red-text);
+  font-weight: 700;
+}
+
+.ticket__ball--blue-active {
+  color: var(--ball-blue-text);
+  font-weight: 700;
+}
+
+.ticket__mult {
+  font-size: 26rpx;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* 底部：投注金额 + 中奖金额 */
+.ticket__bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ticket__bet-amount {
+  font-size: 24rpx;
+  color: var(--text-muted);
+}
+
+/* 中奖金额用 --reward-text（浅色 #A16207 5.5:1；原 #F5A623 仅 2.03:1） */
+.ticket__win-amount {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: var(--reward-text);
+}
+
+/* ==================== 详情抽屉（长详情档 ≈ 70vh） ==================== */
+
+.ledger-drawer__mask {
+  position: fixed;
+  inset: 0;
+  background: var(--overlay);
+  display: flex;
+  align-items: flex-end;
+  z-index: 20;
+}
+
+.ledger-drawer {
+  width: 100%;
+  height: 70vh;
+  min-height: 860rpx;
+  max-height: calc(100vh - 140rpx);
+  background: var(--surface-raised);
+  border-radius: 40rpx 40rpx 0 0;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+.ledger-drawer__handle {
+  width: 88rpx;
+  height: 8rpx;
+  border-radius: 999rpx;
+  background: var(--sheet-handle);
+  margin: 20rpx auto 24rpx;
+}
+
+.ledger-drawer__header {
+  display: flex;
+  flex-direction: column;
+  gap: 10rpx;
+  padding: 0 32rpx 24rpx;
+}
+
+.ledger-drawer__title {
+  font-size: 32rpx;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.ledger-drawer__meta {
+  font-size: 22rpx;
+  color: var(--text-muted);
+}
+
+.ledger-drawer__desc {
+  font-size: 24rpx;
+  line-height: 36rpx;
+  color: var(--text-secondary);
+}
+
+.ledger-drawer__body {
+  flex: 1;
+  height: 0;
+  padding: 0 32rpx;
+  box-sizing: border-box;
+}
+
+.ledger-drawer__panel {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+  padding: 24rpx;
+  margin-bottom: 20rpx;
+  background: var(--surface-sunken);
+  border-radius: 32rpx;
+}
+
+.ledger-drawer__panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20rpx;
+}
+
+.ledger-drawer__panel-title {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.ledger-drawer__panel-sub {
+  font-size: 22rpx;
+  color: var(--text-muted);
+}
+
+.ledger-drawer__ball-row,
+.ledger-drawer__bet-balls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+}
+
+.ledger-drawer__ball {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24rpx;
+  font-weight: 700;
+  color: var(--ball-on-fill);
+}
+
+/* 红蓝区隔符（2026-08-20 新增：明细抽屉红球与蓝球之间加 "-"） */
+.ledger-drawer__dash {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin: 0 6rpx;
+}
+
+.ledger-drawer__ball--muted {
+  background: var(--ball-muted-fill);
+  color: var(--ball-muted-text);
+}
+
+.ledger-drawer__ball--red {
+  background: var(--ball-red-fill);
+  color: var(--ball-on-fill);
+}
+
+.ledger-drawer__ball--blue {
+  background: var(--ball-blue-fill);
+  color: var(--ball-on-fill);
+}
+
+.ledger-drawer__bet {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+}
+
+.ledger-drawer__bet-mult {
+  font-size: 26rpx;
+  font-weight: 700;
+  color: var(--text-primary);
+  flex-shrink: 0;
+}
+
+.ledger-drawer__empty {
+  font-size: 24rpx;
+  line-height: 36rpx;
+  color: var(--text-muted);
+}
+
+.ledger-drawer__actions {
+  display: flex;
+  gap: 24rpx;
+  padding: 20rpx 32rpx calc(env(safe-area-inset-bottom) + 32rpx);
+  flex-shrink: 0;
+  background: var(--surface-raised);
+}
+
+.ledger-drawer__action {
+  flex: 1;
+}
+
+/* 危险操作（删除记录）：危险色底 + 危险色字。
+   与「标记已兑奖」的主操作明确区分，避免误触不可逆操作。 */
+.ledger-drawer__action--danger {
+  background: var(--danger-bg);
+  color: var(--danger-text);
+}
+
+.ledger-drawer__action--danger[disabled] {
+  background: var(--danger-bg);
+  color: var(--danger-text);
+  opacity: 0.6;
+}
+
+/* 加载更多 */
+.load-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8rpx;
+  height: 80rpx;
+}
+
+.load-more__text {
+  font-size: 26rpx;
+  color: var(--text-muted);
+}

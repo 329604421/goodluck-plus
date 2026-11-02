@@ -1,0 +1,88 @@
+/* custom-tab-bar/index.wxss
+   设计稿：TabBar 高96px（paddingTop10 + 胶囊62 + paddingBottom22）
+
+   ⚠️ 2026-10-16 事故与铁律（模拟器实拍确认）：
+   自定义 tabBar **渲染在 page 节点之外**（是 page 的兄弟节点）。因此 app.wxss 里
+   `page { --x: ... }` 定义的 CSS 变量**继承不进来** —— 本组件内每一条 var(--x)
+   都会解析失败、声明被静默丢弃。症状：底部胶囊白底 / 边框 / 选中项黑底**全部消失**，
+   4 组文字图标悬浮在页面上，看起来像"底部导航栏没有了"，且**不报任何错**。
+   所以本文件必须自己 @import 一份令牌（tokens.wxss 里用 `page, .tabbar` 双选择器定义，
+   本组件的根节点正好是 .tabbar）。**新增脱离 page 的组件时，把它的根类名加进
+   tokens.wxss 那两个选择器列表，不要在这里另抄色值。** */
+
+@import "../styles/tokens.wxss";
+
+.tabbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 999;
+  /* 底部内边距 = 设计稿的 22px（44rpx），**不要加 env(safe-area-inset-bottom)**：
+     2026-10-16 一度改成 calc(44rpx + env(...))，在带 Home 指示条的机型上直接把胶囊
+     顶高了 34px（模拟器实拍量测：胶囊底边离屏幕底边从 22px 变成约 56px），
+     用户一眼看出「位置偏上了」，且与冻结的设计稿数值不符。
+     结论：胶囊是**悬浮**元素而非通栏，22px 的底部留白本身已越过 Home 指示条，
+     不需要再叠安全区。安全区只影响内容留白，见 app.wxss 的 .page-bottom-safe。 */
+  padding: 20rpx 42rpx 44rpx;
+  box-sizing: border-box;
+  background: transparent;
+}
+
+/* 底部底板：由透明渐变到近实底，替代「模糊」在低端机型不可用时的视觉兜底。
+   scrim 三档令牌随主题整组切换，避免出现「渐变里混了浅色」的偏色。 */
+.tabbar__backdrop {
+  position: absolute;
+  left: 20rpx;
+  right: 20rpx;
+  bottom: 0;
+  height: 196rpx;
+  border-radius: 44rpx 44rpx 0 0;
+  background: linear-gradient(180deg, var(--scrim-0) 0%, var(--scrim-1) 30%, var(--scrim-2) 100%);
+  backdrop-filter: blur(20rpx);
+  -webkit-backdrop-filter: blur(20rpx);
+  pointer-events: none;
+}
+
+/* 胶囊 = 最高台面（浅色纯白 / 深色 #2B2620）。
+   层级靠 --elev-2 投影，不再用描边（深色下投影为 none，改由台面明度差承担）。 */
+.tabbar__pill {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  height: 124rpx;
+  background: var(--surface-raised);
+  border-radius: 72rpx;
+  box-shadow: var(--elev-2);
+  box-sizing: border-box;
+  padding: 8rpx;
+}
+
+.tabbar__item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6rpx;
+  height: 108rpx;
+  border-radius: 64rpx;
+  box-sizing: border-box;
+}
+
+/* 选中项：浅色为墨黑胶囊 + 白字；深色为暗橙底 + 浅橙字。
+   不用主按钮的亮橙大块 —— 一个导航 Tab 抢走主操作的重要度是层级错误。 */
+.tabbar__item--active {
+  background: var(--selection-bg);
+}
+
+.tabbar__label {
+  font-size: 22rpx;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.tabbar__item--active .tabbar__label {
+  color: var(--selection-text);
+}

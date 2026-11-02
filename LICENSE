@@ -19,17 +19,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
----
-
-补充说明（不构成许可证条款的一部分，仅为使用提示）：
-
-本项目是一个彩票记录管理工具，不销售彩票、不代购彩票、不提供任何投注服务，
-也不预测开奖结果。软件中的号码推荐功能基于姓名、生日等输入做确定性推演，
-仅供娱乐，不构成任何购彩建议，不会提高中奖概率。
-
-彩票相关业务规则（兑奖期限、兑奖渠道、奖级设置）以中国财政部与国家体育总局
-彩票管理中心、中国福利彩票发行管理中心的最新公告为准；本项目内建的规则表
-可能随政策调整而滞后，使用前请自行核对。
-
-请理性购彩。未满 18 周岁不得购买彩票或兑奖。
